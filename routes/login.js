@@ -16,7 +16,7 @@ const router = express.Router();
 //= =======================================================================
 
 router.get('/', function (req, res) {
-  res.render('login');
+  res.render('sim_editor/sim_editor_2024');
 });
 
 module.exports = router;

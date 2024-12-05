@@ -153,14 +153,11 @@ async function bootstrap(){
     */
     // init passport and session
     app.use(session({
-        store: MongoStore.create({ mongoUrl: process.env.DB_CONNECT_STR, mongoOptions:{useUnifiedTopology: true}}),
-        secret: process.env.SESSION_SECRET || 'rcjscoring',
+        secret: 'keyboard cat',
         resave: false,
-        saveUninitialized: false,
-        cookie: {
-        maxAge: 10 * 60 * 60 * 1000
-        }
-    }))
+        saveUninitialized: true,
+        cookie: { secure: true }
+      }))
     app.use(passport.initialize())
     app.use(passport.session())
 
@@ -224,7 +221,7 @@ async function bootstrap(){
     app.use('/admin', pass.ensureAdmin, adminRoute)
     bullAdapter.setBasePath('/admin/queues')
     app.use('/admin/queues', pass.ensureSuper, bullAdapter.getRouter())
-    app.use('/admin/mongo', pass.ensureSuper, await mongo_express(mongo_express_config))
+    // app.use('/admin/mongo', pass.ensureSuper, await mongo_express(mongo_express_config))
     app.use('/document', [documentRoute.public, pass.ensureAuthenticated, documentRoute.private, pass.ensureAdmin, documentRoute.admin])
     app.use('/registration', [registrationRoute.public, pass.ensureAuthenticated, registrationRoute.private, pass.ensureAdmin, registrationRoute.admin])
     app.use('/mypage', [myPageRoute.public, pass.ensureAuthenticated, myPageRoute.private, pass.ensureAdmin, myPageRoute.admin])

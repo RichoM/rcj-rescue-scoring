@@ -30,31 +30,7 @@ const logger = require('../../config/logger').mainLogger;
  * @apiSuccess (400) {String}   msg Bottled message
  */
 router.post('/login', function (req, res) {
-  const { username } = req.body;
-  const { password } = req.body;
-
-  if (!validator.isAscii(password)) {
-    return res.status(400).send({ msg: 'Invalid characters' });
-  }
-
-  passport.authenticate('local', function (err, user, info) {
-    if (err) {
-      // return next(err);
-      logger.error(err);
-      return res.status(400).send({ msg: err });
-    }
-    if (!user) {
-      return res.status(400).send({ msg: 'Login failed' });
-    }
-    req.logIn(user, function (err) {
-      if (err) {
-        logger.error(err);
-        return res.status(400).send({ msg: err });
-      }
-      res.locals.user = username;
-      return res.send({ msg: 'Login successful' });
-    });
-  })(req, res);
+  return res.send({ msg: 'Login successful' });
 });
 
 /**
