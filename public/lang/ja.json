@@ -920,6 +920,7 @@
             "noStart": "@:admin.lineMapEditor.noStart",
             "start": "@:admin.lineMapEditor.start",
             "placement" : "被災者の配置：",
+            "victimRotation": "@:admin.lineMapEditor.victimRotation",
             "export": "@:admin.lineMapEditor.export",
             "import": "@:admin.lineMapEditor.import",
             "exportW": "このマップをErebus用ワールドファイルにエクスポート",

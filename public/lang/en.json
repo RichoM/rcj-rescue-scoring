@@ -922,6 +922,7 @@
             "noStart": "@:admin.lineMapEditor.noStart",
             "start": "@:admin.lineMapEditor.start",
             "placement" : "Placement of victims:",
+            "victimRotation": "Victim orientation:",
             "export": "@:admin.lineMapEditor.export",
             "import": "@:admin.lineMapEditor.import",
             "exportW": "Export this map as a world file for Erebus",
