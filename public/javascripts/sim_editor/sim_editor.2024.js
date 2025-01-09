@@ -58,6 +58,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.01,
                     z: 0.238,
                     rot: 1.5708,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "harmed",
                     score: 15,
                 }
@@ -67,6 +68,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.548,
                     z: 0.193396,
                     rot: 1.05,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "P",
                     score: 30,
                 }
@@ -84,6 +86,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.33,
                     z: 0.3,
                     rot: 0,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "unharmed",
                     score: 15,
                 },
@@ -91,6 +94,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.4991,
                     z: 0.27366,
                     rot: 2.0944,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "harmed",
                     score: 15,
                 }
@@ -100,6 +104,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.14,
                     z: 0.299,
                     rot: 0,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "C",
                     score: 30,
                 },
@@ -107,6 +112,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.564142,
                     z: 0.474142,
                     rot: 0.785398,
+                    frontRotation: 0, //TODO: pass rotation
                     type: "P",
                     score: 30,
                 }
@@ -1178,6 +1184,26 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         return Math.round(value / base) * base;
     }
 
+    //tag proto file creation
+    
+    const W_REACHABLE     = 0;
+    const W_ARWALL        = 1;
+    const W_CHECKPOINT    = 2;
+    const W_BLACK         = 3;
+    const W_START         = 4;
+    const W_SWAMP         = 5;
+    const W_HUMAN_TYPE    = 6;
+    const W_HUMAN_PLACE   = 7;
+    const W_LINEAR        = 8;
+    const W_OBSTACLE      = 9;
+    const W_HALF_WALL_OUT = 10;
+    const W_HALF_WALL_IN  = 11;
+    const W_CURVE_WALL    = 12;
+    const W_HALF_WALL_VIC = 13;
+    const W_FLOOR_COLOR   = 14;
+    const W_HALF_WALL_OUT_INFO = 15;
+    const W_ROOMNUM       = 16;
+
     function createWorld(){
         let walls = [];
         for(let x=1,l=$scope.length*2+1;x<l;x+=2){
@@ -1191,179 +1217,114 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             for(let x=1,m=$scope.width*2+1;x<m;x+=2){
 
                 let thisCell = $scope.cells[x+','+y+',0'];
-                let arWall = [0, 0, 0, 0];
+                let arWall     = [0, 0, 0, 0];
                 let arWallHalf = [0, 0, 0, 0];
-                if($scope.cells[(x)+','+(y-2)+',0'] == null && $scope.cells[(x)+','+(y-1)+',0'] && $scope.cells[(x)+','+(y-1)+',0'].isWall) arWall[0] = 1;
-                if($scope.cells[(x+1)+','+(y)+',0'] && $scope.cells[(x+1)+','+(y)+',0'].isWall) arWall[1] = 1;
-                if($scope.cells[(x)+','+(y+1)+',0'] && $scope.cells[(x)+','+(y+1)+',0'].isWall) arWall[2] = 1;
-                if($scope.cells[(x-2)+','+(y)+',0'] == null && $scope.cells[(x - 1)+','+(y)+',0'] && $scope.cells[(x-1)+','+(y)+',0'].isWall) arWall[3] = 1;
 
-                if($scope.cells[(x)+','+(y-1)+',0'] && y == 1 && $scope.cells[(x)+','+(y-1)+',0'].halfWall > 0) {
+                if($scope.cells[(x)+','+(y-2)+',0'] == null
+                && $scope.cells[(x)+','+(y-1)+',0']
+                && $scope.cells[(x)+','+(y-1)+',0'].isWall
+                ) arWall[0] = 1;
+
+                if($scope.cells[(x+1)+','+(y)+',0'] 
+                && $scope.cells[(x+1)+','+(y)+',0'].isWall
+                ) arWall[1] = 1;
+
+                if($scope.cells[(x)+','+(y+1)+',0'] 
+                && $scope.cells[(x)+','+(y+1)+',0'].isWall
+                ) arWall[2] = 1;
+
+                if($scope.cells[(x-2)+','+(y)+',0'] == null 
+                && $scope.cells[(x-1)+','+(y)+',0'] 
+                && $scope.cells[(x-1)+','+(y)+',0'].isWall
+                ) arWall[3] = 1;
+
+                if($scope.cells[(x)+','+(y-1)+',0'] 
+                && y == 1 
+                && $scope.cells[(x)+','+(y-1)+',0'].halfWall > 0) {
                     $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
                     arWallHalf[0] = $scope.cells[(x)+','+(y-1)+',0'].halfWall;
                 }
-                if($scope.cells[(x+1)+','+(y)+',0'] && $scope.cells[(x+1)+','+(y)+',0'].halfWall > 0) {
+
+                if($scope.cells[(x+1)+','+(y)+',0']
+                && $scope.cells[(x+1)+','+(y)+',0'].halfWall > 0) {
                     $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
                     arWallHalf[1] = $scope.cells[(x+1)+','+(y)+',0'].halfWall;
                 }
-                if($scope.cells[(x)+','+(y+1)+',0'] && $scope.cells[(x)+','+(y+1)+',0'].halfWall > 0) {
+
+                if($scope.cells[(x)+','+(y+1)+',0'] 
+                && $scope.cells[(x)+','+(y+1)+',0'].halfWall > 0) {
                     $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
                     arWallHalf[2] = $scope.cells[(x)+','+(y+1)+',0'].halfWall;
                 }
-                if($scope.cells[(x-1)+','+(y)+',0'] && x == 1 && $scope.cells[(x-1)+','+(y)+',0'].halfWall > 0) {
+
+                if($scope.cells[(x-1)+','+(y)+',0'] 
+                && x == 1 
+                && $scope.cells[(x-1)+','+(y)+',0'].halfWall > 0) {
                     $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
                     arWallHalf[3] = $scope.cells[(x-1)+','+(y)+',0'].halfWall;
                 }
 
-                let humanType = 0; // 1 - harmed, 2 - unharmed, 3 - stable, 4 - thermal
-                let humanPlace = 0;
+                const HUMAN_NONE = 0;
+                const HUMAN_H    = 1;
+                const HUMAN_U    = 2;
+                const HUMAN_S    = 3;
+                const HUMAN_F    = 5;
+                const HUMAN_P    = 6;
+                const HUMAN_C    = 7;
+                const HUMAN_O    = 8;
+                let humanType = HUMAN_NONE;
+
+                
+                /**
+                 * @param {string} str
+                 * @returns {number}
+                 */
+                function human_str_to_type(str) {
+                    switch (str) {
+                        case 'None': return HUMAN_NONE;
+                        case 'H'   : return HUMAN_H;
+                        case 'U'   : return HUMAN_U;
+                        case 'S'   : return HUMAN_S;
+                        case 'F'   : return HUMAN_F;
+                        case 'P'   : return HUMAN_P;
+                        case 'C'   : return HUMAN_C;
+                        case 'O'   : return HUMAN_O;
+                    } 
+                }
+
+                const HUMAN_PLACE_TOP    = 0;
+                const HUMAN_PLACE_RIGHT  = 1;
+                const HUMAN_PLACE_BOTTOM = 2;
+                const HUMAN_PLACE_LEFT   = 3;
+                let humanPlace = HUMAN_PLACE_TOP;
+
                 let roomNum = 1;
                 let floorColor = '0.635 0.635 0.635';
                 let halfWallOutVar = [0, 0, 0, 0];
-                let halfWallInVar = [0, 0, 0, 0];
-                let curveWallVar = [0, 0, 0, 0];
+                let halfWallInVar  = [0, 0, 0, 0];
+                let curveWallVar   = [0, 0, 0, 0];
                 //stores shortening, lengthing of outer half walls
                 let halfWallOutInfo = [1, 1, 1, 1];
                 if(!thisCell){
                     continue;
                 }
-                if(thisCell.tile && thisCell.tile.victims){
-                    if(thisCell.tile.victims.top){
-                        switch(thisCell.tile.victims.top){
-                            case 'None':
-                                break;
-                            case 'H':
-                                humanType = 1;
-                                humanPlace = 0;
-                                break;
-                            case 'S':
-                                humanType = 3;
-                                humanPlace = 0;
-                                break;
-                            case 'U':
-                                humanType = 2;
-                                humanPlace = 0;
-                                break;
-                            case 'F':
-                                humanType = 5;
-                                humanPlace = 0;
-                                break;
-                            case 'P':
-                                humanType = 6;
-                                humanPlace = 0;
-                                break;
-                            case 'C':
-                                humanType = 7;
-                                humanPlace = 0;
-                                break;
-                            case 'O':
-                                humanType = 8;
-                                humanPlace = 0;
-                                break;
-                        }
 
-                    }else if(thisCell.tile.victims.right){
-                        switch(thisCell.tile.victims.right){
-                            case 'None':
-                                break;
-                            case 'H':
-                                humanType = 1;
-                                humanPlace = 1;
-                                break;
-                            case 'S':
-                                humanType = 3;
-                                humanPlace = 1;
-                                break;
-                            case 'U':
-                                humanType = 2;
-                                humanPlace = 1;
-                                break;
-                            case 'F':
-                                humanType = 5;
-                                humanPlace = 1;
-                                break;
-                            case 'P':
-                                humanType = 6;
-                                humanPlace = 1;
-                                break;
-                            case 'C':
-                                humanType = 7;
-                                humanPlace = 1;
-                                break;
-                            case 'O':
-                                humanType = 8;
-                                humanPlace = 1;
-                                break;
-                        }
-                    }else if(thisCell.tile.victims.bottom){
-                        switch(thisCell.tile.victims.bottom){
-                            case 'None':
-                                break;
-                            case 'H':
-                                humanType = 1;
-                                humanPlace = 2;
-                                break;
-                            case 'S':
-                                humanType = 3;
-                                humanPlace = 2;
-                                break;
-                            case 'U':
-                                humanType = 2;
-                                humanPlace = 2;
-                                break;
-                            case 'F':
-                                humanType = 5;
-                                humanPlace = 2;
-                                break;
-                            case 'P':
-                                humanType = 6;
-                                humanPlace = 2;
-                                break;
-                            case 'C':
-                                humanType = 7;
-                                humanPlace = 2;
-                                break;
-                            case 'O':
-                                humanType = 8;
-                                humanPlace = 2;
-                                break;
-
-                        }
-                    }else if(thisCell.tile.victims.left){
-                        switch(thisCell.tile.victims.left){
-                            case 'None':
-                                break;
-                            case 'H':
-                                humanType = 1;
-                                humanPlace = 3;
-                                break;
-                            case 'S':
-                                humanType = 3;
-                                humanPlace = 3;
-                                break;
-                            case 'U':
-                                humanType = 2;
-                                humanPlace = 3;
-                                break;
-                            case 'F':
-                                humanType = 5;
-                                humanPlace = 3;
-                                break;
-                            case 'P':
-                                humanType = 6;
-                                humanPlace = 3;
-                                break;
-                            case 'C':
-                                humanType = 7;
-                                humanPlace = 3;
-                                break;
-                            case 'O':
-                                humanType = 8;
-                                humanPlace = 3;
-                                break;
-                        }
+                if (thisCell.tile && thisCell.tile.victims) {
+                    if (thisCell.tile.victims.top) {
+                        humanType = human_str_to_type(thisCell.tile.victims.top);
+                        humanPlace = HUMAN_PLACE_TOP;
+                    } else if (thisCell.tile.victims.right) {
+                        humanType = human_str_to_type(thisCell.tile.victims.right);
+                        humanPlace = HUMAN_PLACE_RIGHT;
+                    } else if(thisCell.tile.victims.bottom){
+                        humanType = human_str_to_type(thisCell.tile.victims.bottom);
+                        humanPlace = HUMAN_PLACE_BOTTOM;
+                    } else if(thisCell.tile.victims.left){
+                        humanType = human_str_to_type(thisCell.tile.victims.left);
+                        humanPlace = HUMAN_PLACE_LEFT;
                     }
                 }
+                
                 if (thisCell.tile && thisCell.tile.color) {
                     floorColor = '';
                     if (thisCell.tile.color == '#08D508') // area 1 <-> 4
@@ -1379,22 +1340,41 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     curveWallVar = '[' + thisCell.tile.curve.toString() + ']';
                 }
                 roomNum = checkRoomNumber(x,y,0)
+
+
                 if(thisCell.tile){
-                    walls[(y-1)/2][(x-1)/2] = [u2f(thisCell.reachable), arWall, u2f(thisCell.tile.checkpoint), u2f(thisCell.tile.black), x == $scope.startTile.x && y == $scope.startTile.y, u2f(thisCell.tile.swamp), humanType, humanPlace, u2f(thisCell.isLinear), u2f(thisCell.tile.obstacle), halfWallOutVar, halfWallInVar, curveWallVar, thisCell.tile.halfWallVic, floorColor, halfWallOutInfo, roomNum];
+                    walls[(y-1)/2][(x-1)/2][W_REACHABLE    ] = u2f(thisCell.reachable);
+                    walls[(y-1)/2][(x-1)/2][W_ARWALL       ] = arWall;
+                    walls[(y-1)/2][(x-1)/2][W_CHECKPOINT   ] = u2f(thisCell.tile.checkpoint);
+                    walls[(y-1)/2][(x-1)/2][W_BLACK        ] = u2f(thisCell.tile.black);
+                    walls[(y-1)/2][(x-1)/2][W_START        ] = (x == $scope.startTile.x && y == $scope.startTile.y);
+                    walls[(y-1)/2][(x-1)/2][W_SWAMP        ] = u2f(thisCell.tile.swamp);
+                    walls[(y-1)/2][(x-1)/2][W_HUMAN_TYPE   ] = humanType;
+                    walls[(y-1)/2][(x-1)/2][W_HUMAN_PLACE  ] = humanPlace;
+                    walls[(y-1)/2][(x-1)/2][W_LINEAR       ] = u2f(thisCell.isLinear);
+                    walls[(y-1)/2][(x-1)/2][W_OBSTACLE     ] = u2f(thisCell.tile.obstacle);
+                    walls[(y-1)/2][(x-1)/2][W_HALF_WALL_OUT] = halfWallOutVar;
+                    walls[(y-1)/2][(x-1)/2][W_HALF_WALL_IN ] = halfWallInVar;
+                    walls[(y-1)/2][(x-1)/2][W_CURVE_WALL   ] = curveWallVar;
+                    walls[(y-1)/2][(x-1)/2][W_HALF_WALL_VIC] = thisCell.tile.halfWallVic;
+                    walls[(y-1)/2][(x-1)/2][W_FLOOR_COLOR  ] = floorColor;
+                    walls[(y-1)/2][(x-1)/2][W_HALF_WALL_OUT_INFO] = halfWallOutInfo;
+                    walls[(y-1)/2][(x-1)/2][W_ROOMNUM      ] = roomNum;
                 }
             }
         }
-
+        
+        const DIR_NORTH = 0;
+        const DIR_EAST  = 1;
+        const DIR_SOUTH = 2;
+        const DIR_WEST  = 3;
         function vectorRotate(vector, dir) {
-            if (dir == 0) // N
-                return [vector[0], vector[1]]
-            else if (dir == 1) // E
-                return [-1 * vector[1], vector[0]]
-            else if (dir == 2) // S
-                return [-1 * vector[0], -1 * vector[1]]
-            else if (dir == 3) // W
-                return [vector[1], -1 * vector[0]]
-
+            switch (dir) {
+                case DIR_NORTH: return [vector[0], vector[1]]
+                case DIR_EAST : return [-1 * vector[1], vector[0]]
+                case DIR_SOUTH: return [-1 * vector[0], -1 * vector[1]]
+                case DIR_WEST : return [vector[1], -1 * vector[0]]
+            }
         }
 
         function inBounds(z, x) {
@@ -1544,25 +1524,136 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
         `;
 
-        const visualHumanPart = ({x, z, rot, id, type, score}) => `
-        Victim {
-            translation ${x} 0 ${z}
-            rotation 0 1 0 ${rot}
-            name "Victim${id}"
-            type "${type}"
-            scoreWorth ${score}
-        }
-        `;
 
-        const hazardPart = ({x, z, rot, id, type, score}) => `
-        HazardMap {
-            translation ${x} 0 ${z}
-            rotation 0 1 0 ${rot}
-            name "Hazard${id}"
-            type "${type}"
-            scoreWorth ${score}
+        /**
+        * @typedef {Object} Quaternion
+        * @property {number} x
+        * @property {number} y
+        * @property {number} z
+        * @property {number} w
+        */
+
+        /**
+        * @param {Quaternion} q
+        * @returns {Quaternion}
+        * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
+        */
+        function normalize_quaternion(q) {
+            let n = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+            return {
+                x: q.x / n,
+                y: q.y / n,
+                z: q.z / n,
+                w: q.w / n
+            }
         }
-        `;
+
+        /**
+        * @param {Quaternion} q1
+        * @param {Quaternion} q2
+        * @returns {Quaternion}
+        * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
+        */
+        function multiply_quaternions(q1, q2) {
+            return {
+                x:  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x,
+                y: -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y,
+                z:  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z,
+                w: -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w
+            }
+        }
+
+        /**
+        * @typedef {Object} AxisAngle
+        * @property {number} x
+        * @property {number} y
+        * @property {number} z
+        * @property {number} angle
+        */
+
+        /**
+        * @param {AxisAngle} a
+        * @returns {Quaternion}
+        * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm} for reference implementation in java.
+        */
+        function axis_angle_to_quaternion(a) {
+            let s = Math.sin(a.angle/2);
+            return {
+                x: a.x * s,
+                y: a.y * s,
+                z: a.z * s,
+                w: Math.cos(a.angle/2)
+            }
+        }
+
+        /**
+        * @param {Quaternion} q
+        * @returns {AxisAngle}
+        * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm} for reference implementation in java.
+        */
+        function quaternion_to_axis_angle(q) {
+            // if w>1 acos and sqrt will produce errors, this can't happen if quaternion is normalized
+            if (q.w > 1) normalize_quaternion(q);
+            let angle = 2 * Math.acos(q.w);
+            let s = Math.sqrt(1-q.w*q.w); // if quaternion normalized then w is less than 1, so term is always positive
+            if (s < 0.001) { // avoid divide by zero
+                // if s is close to zero, axis direction isn't important
+                return {
+                    x: q.x, // if it's important that axis is normalized then replace with x=1; y=z=0;
+                    y: q.y,
+                    z: q.z,
+                    angle: angle
+                }
+            } else {
+                return {
+                    x: q.x / s, // normalize axis
+                    y: q.y / s,
+                    z: q.z / s,
+                    angle: angle
+                }
+            }
+        }
+
+        function calc_rot(y_rot, front_rot) {
+            //TODO: calculate frontRotation correctly
+            let front_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
+            let y_rot_quat     = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot}) 
+
+            let final_rot_quat = multiply_quaternions(y_rot_quat, front_rot_quat)
+            let final_rot = quaternion_to_axis_angle(final_rot_quat)
+
+            console.log("y_rot_quat: ", y_rot_quat);
+            console.log("front_rot_quat: ", front_rot_quat);
+            console.log("final_rot_quat: ", final_rot_quat);
+            console.log("final_rot: ", final_rot);
+            return final_rot;
+        }
+
+        function visualHumanPart({x, z, rot, frontRotation, id, type, score}) {
+            rq = calc_rot(rot, frontRotation)
+            return `
+            Victim {
+                translation ${x} 0 ${z}
+                rotation ${rq.x} ${rq.y} ${rq.z} ${rq.angle}
+                name "Victim${id}"
+                type "${type}"
+                scoreWorth ${score}
+            }
+            `;
+        }
+
+        function hazardPart({x, z, rot, frontRotation, id, type, score}) {
+            rq = calc_rot(rot, frontRotation)
+            return `
+            HazardMap {
+                translation ${x} 0 ${z}
+                rotation ${rq.x} ${rq.y} ${rq.z} ${rq.angle}
+                name "Hazard${id}"
+                type "${type}"
+                scoreWorth ${score}
+            }
+            `;
+        }
 
         const obstaclePart = ({id, xSize, ySize, zSize, x, y, z, rot}) => `
         DEF OBSTACLE${id} Solid {
@@ -1621,7 +1712,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
         let fileData = fileHeader({ y: 0.2*height, z : 0.17*height})
 
-        //Rotations of humans for each wall
+        //Y rotation of humans for each wall
         let humanRotation = [3.14, 1.57, 0, -1.57]
         let humanRotationCurve = [2.355, 0.785, -0.785, -2.355];
         let halfWallVicPos = [[-0.075, -0.136], [-0.014, -0.075], [-0.075, -0.014], [-0.136, -0.075], 
@@ -1660,68 +1751,74 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 let horizontalWalls = 0;
                 let topLeft = false;
 
-                if((walls[x-1] != null && walls[x-1][z] != null && (walls[x-1][z][1][3] > 0 || walls[x-1][z][10][3] == 1)) || (walls[x-1] != null && walls[x-1][z-1] != null && (walls[x-1][z-1][1][1] > 0 || walls[x-1][z-1][10][1] == 1))) verticalWalls++; //North wall
-                if((walls[x] != null && walls[x][z] != null && (walls[x][z][1][0] > 0 || walls[x][z][10][0] == 1)) || (walls[x-1] != null && walls[x-1][z] != null && (walls[x-1][z][1][2] > 0 || walls[x-1][z][10][2] == 1))) horizontalWalls++;
-                if((walls[x] != null && walls[x][z] != null && (walls[x][z][1][3] > 0 || walls[x][z][10][3] == 2)) || (walls[x] != null && walls[x][z-1] != null && (walls[x][z-1][1][1] > 0 || walls[x][z-1][10][1] == 2))) verticalWalls++;
-                if((walls[x-1] != null && walls[x-1][z-1] != null && (walls[x-1][z-1][1][2] > 0 || walls[x-1][z-1][10][2] == 2)) || (walls[x] != null && walls[x][z-1] != null && (walls[x][z-1][1][0] > 0 || walls[x][z-1][10][0] == 2))) horizontalWalls++;
+                if((walls[x-1] != null && walls[x-1][ z ] != null && (walls[x-1][ z ][1][3] > 0 || walls[x-1][ z ][10][3] == 1))
+                || (walls[x-1] != null && walls[x-1][z-1] != null && (walls[x-1][z-1][1][1] > 0 || walls[x-1][z-1][10][1] == 1))) verticalWalls++; //North wall
+
+                if((walls[ x ] != null && walls[ x ][ z ] != null && (walls[ x ][ z ][1][0] > 0 || walls[ x ][ z ][10][0] == 1))
+                || (walls[x-1] != null && walls[x-1][ z ] != null && (walls[x-1][ z ][1][2] > 0 || walls[x-1][ z ][10][2] == 1))) horizontalWalls++;
+
+                if((walls[ x ] != null && walls[ x ][ z ] != null && (walls[ x ][ z ][1][3] > 0 || walls[ x ][ z ][10][3] == 2))
+                || (walls[ x ] != null && walls[ x ][z-1] != null && (walls[ x ][z-1][1][1] > 0 || walls[ x ][z-1][10][1] == 2))) verticalWalls++;
+
+                if((walls[x-1] != null && walls[x-1][z-1] != null && (walls[x-1][z-1][1][2] > 0 || walls[x-1][z-1][10][2] == 2))
+                || (walls[ x ] != null && walls[ x ][z-1] != null && (walls[ x ][z-1][1][0] > 0 || walls[ x ][z-1][10][0] == 2))) horizontalWalls++;
 
                 //Very special case for top left corner
-                if((walls[x] != null && walls[x][z] != null && (walls[x][z][1][0] > 0 || walls[x][z][10][0] == 1)) || (walls[x] != null && walls[x][z] != null && (walls[x][z][1][3] > 0 || walls[x][z][10][3] == 2))) topLeft = true;
+                if((walls[x] != null && walls[x][z] != null && (walls[x][z][1][0] > 0 || walls[x][z][10][0] == 1))
+                || (walls[x] != null && walls[x][z] != null && (walls[x][z][1][3] > 0 || walls[x][z][10][3] == 2))) topLeft = true;
 
 
                 if(horizontalWalls > 0 && verticalWalls > 0) {
-
                     //North wall
-                    if((walls[x-1] != null && walls[x-1][z] && walls[x-1][z][1][3] > 0)) walls[x-1][z][1][3] = (walls[x-1][z][1][3]) * 3;
-                    else if(walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][1][1] > 0) walls[x-1][z-1][1][1] = (walls[x-1][z-1][1][1]) * 3;
-                    else if((walls[x-1] != null && walls[x-1][z] && walls[x-1][z][10][3] == 1)) walls[x-1][z][15][3] *= 3;
-                    else if(walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][10][1] == 1) walls[x-1][z-1][15][1] *= 3;
+                    if    (( walls[x-1] != null && walls[x-1][ z ] && walls[x-1][ z ][ 1][3] > 0))  walls[x-1][ z ][ 1][3] = (walls[x-1][ z ][1][3]) * 3;
+                    else if( walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][ 1][1] > 0)   walls[x-1][z-1][ 1][1] = (walls[x-1][z-1][1][1]) * 3;
+                    else if((walls[x-1] != null && walls[x-1][ z ] && walls[x-1][ z ][10][3] == 1)) walls[x-1][ z ][15][3] *= 3;
+                    else if( walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][10][1] == 1)  walls[x-1][z-1][15][1] *= 3;
                     
 
-                    if((walls[x-1] != null && walls[x-1][z] && walls[x-1][z][1][2] > 0)) walls[x-1][z][1][2] = (walls[x-1][z][1][2]) * horizontalWalls == 1 ? 5 : 2;
-                    else if(walls[x] != null && walls[x][z] && walls[x][z][1][0] > 0) walls[x][z][1][0] = (walls[x][z][1][0]) * 2;
+                    if     ((walls[x-1] != null && walls[x-1][z] && walls[x-1][z][ 1][2] > 0 )) walls[x-1][z][1][2] = (walls[x-1][z][1][2]) * horizontalWalls == 1 ? 5 : 2;
+                    else if( walls[ x ] != null && walls[ x ][z] && walls[ x ][z][ 1][0] > 0 )  walls[ x ][z][1][0] = (walls[x  ][z][1][0]) * 2;
                     else if((walls[x-1] != null && walls[x-1][z] && walls[x-1][z][10][2] == 1)) walls[x-1][z][15][2] *= horizontalWalls == 1 ? 5 : 2;
-                    else if(walls[x] != null && walls[x][z] && walls[x][z][10][0] == 1) walls[x][z][15][0] *= 2;
+                    else if( walls[ x ] != null && walls[ x ][z] && walls[ x ][z][10][0] == 1)  walls[ x ][z][15][0] *= 2;
 
-                    if((walls[x] != null && walls[x][z-1] && walls[x][z-1][1][1] > 0)) walls[x][z-1][1][1] = (walls[x][z-1][1][1]) * 2;
-                    else if(walls[x] != null && walls[x][z] && walls[x][z][1][3] > 0) walls[x][z][1][3] = (walls[x][z][1][3]) * 2;
+                    if     ((walls[x] != null && walls[x][z-1] && walls[x][z-1][1 ][1] > 0))  walls[x][z-1][1 ][1] = (walls[x][z-1][1][1]) * 2;
+                    else if( walls[x] != null && walls[x][z]   && walls[x][z  ][1 ][3] > 0)   walls[x][z  ][1 ][3] = (walls[x][z  ][1][3]) * 2;
                     else if((walls[x] != null && walls[x][z-1] && walls[x][z-1][10][1] == 2)) walls[x][z-1][15][1] *= 2; 
-                    else if(walls[x] != null && walls[x][z] && walls[x][z][10][3] == 2) walls[x][z][15][3] *= 2; 
+                    else if( walls[x] != null && walls[x][z]   && walls[x][z  ][10][3] == 2)  walls[x][z  ][15][3] *= 2; 
 
-                    if((walls[x] != null && walls[x][z-1] && walls[x][z-1][1][0] > 0)) walls[x][z-1][1][0] = (walls[x][z-1][1][0]) * 3;
-                    else if(walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][1][2] > 0) walls[x-1][z-1][1][2] = (walls[x-1][z-1][1][2]) * 3;
-                    else if((walls[x] != null && walls[x][z-1] && walls[x][z-1][10][0] == 2)) walls[x][z-1][15][0] *= 3; 
-                    else if(walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][10][2] == 2) walls[x-1][z-1][15][2] *= 3; 
+                    if     ((walls[x  ] != null && walls[x  ][z-1] && walls[x  ][z-1][1 ][0] > 0))  walls[x  ][z-1][1 ][0] = (walls[x  ][z-1][1][0]) * 3;
+                    else if (walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][1 ][2] > 0)   walls[x-1][z-1][1 ][2] = (walls[x-1][z-1][1][2]) * 3;
+                    else if((walls[x  ] != null && walls[x  ][z-1] && walls[x  ][z-1][10][0] == 2)) walls[x  ][z-1][15][0] *= 3; 
+                    else if (walls[x-1] != null && walls[x-1][z-1] && walls[x-1][z-1][10][2] == 2)  walls[x-1][z-1][15][2] *= 3; 
 
-                    if(topLeft && horizontalWalls == 1 && verticalWalls == 1) {
+                    if (topLeft && horizontalWalls == 1 && verticalWalls == 1) {
                         // If the left and top walls are the only horizontal and vertical walls
 
                         walls[x][z][1][0] /= 2;
                         walls[x][z][1][3] /= 2;
-                        if(walls[x][z][10][0] == 1) walls[x][z][15][0] /= 2;
+                        if (walls[x][z][10][0] == 1) walls[x][z][15][0] /= 2;
                         if (walls[x][z][10][3] == 1) walls[x][z][15][3] /= 2;
                     }
                 }
-               
+
                 //inner half tile walls along horizontal edge of 2 different tiles
                 horizontalWalls = 0;
                 verticalWalls = 0;
-                if(walls[x] != null && walls[x][z] != null && walls[x][z][11][0] > 0) verticalWalls++;
+                if(walls[ x ] != null && walls[ x ][z] != null && walls[ x ][z][11][0] > 0) verticalWalls++;
                 if(walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][11][2] > 0) verticalWalls++;
-                if(walls[x] != null && walls[x][z] != null && walls[x][z][10][0] > 0) horizontalWalls++;
+                if(walls[ x ] != null && walls[ x ][z] != null && walls[ x ][z][10][0] > 0) horizontalWalls++;
                 if(walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][10][2] > 0) horizontalWalls++;
                 if(horizontalWalls > 0 && verticalWalls > 0) {
 
-                    if(walls[x] != null && walls[x][z] != null && walls[x][z][11][0] > 0) walls[x][z][11][0] *= 2;
+                    if(walls[ x ] != null && walls[ x ][z] != null && walls[ x ][z][11][0] > 0) walls[ x ][z][11][0] *= 2;
                     if(walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][11][2] > 0) walls[x-1][z][11][2] *= 3;
 
-                    if(walls[x] != null && walls[x][z] != null && walls[x][z][10][0] == 1) walls[x][z][15][0] *= 3;
+                    if     (walls[x] != null && walls[x][z] != null && walls[x][z][10][0] == 1) walls[x][z][15][0] *= 3;
                     else if(walls[x] != null && walls[x][z] != null && walls[x][z][10][0] == 2) walls[x][z][15][0] *= horizontalWalls == 1 ? 5 : 2;
 
-                    if(walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][10][2] == 1) walls[x-1][z][15][2] *= 2;
+                    if     (walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][10][2] == 1) walls[x-1][z][15][2] *= 2;
                     else if(walls[x-1] != null && walls[x-1][z] != null && walls[x-1][z][10][2] == 2) walls[x-1][z][15][2] *= horizontalWalls == 1 ? 5 : 2;
                 }
-
 
                 horizontalWalls = 0;
                 verticalWalls = 0;
@@ -1744,23 +1841,22 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 horizontalWalls = 0;
                 verticalWalls = 0;
                 //inner half tile walls along vertical edge of 2 different tiles
-                if((walls[x] != null && (walls[x][z] != null && walls[x][z][10][3] > 0)) || (walls[x] != null && walls[x][z-1] != null && walls[x][z-1][10][1] > 0)) verticalWalls++;
-                if(walls[x] != null && walls[x][z] != null && walls[x][z][11][3] > 0) horizontalWalls++;
+                if(walls[x] != null && (walls[x][ z ] != null && walls[x][ z ][10][3] > 0)) verticalWalls++;
+                if(walls[x] != null &&  walls[x][z-1] != null && walls[x][z-1][10][1] > 0) verticalWalls++;
+
+                if(walls[x] != null && walls[x][ z ] != null && walls[x][ z ][11][3] > 0) horizontalWalls++;
                 if(walls[x] != null && walls[x][z-1] != null && walls[x][z-1][11][1] > 0) horizontalWalls++;
 
                 if(verticalWalls > 0 && horizontalWalls > 0) {
-                    if(walls[x] != null && walls[x][z] != null && walls[x][z][10][3] == 2) walls[x][z][15][3] *= 3;
+                    if     (walls[x] != null && walls[x][z] != null && walls[x][z][10][3] == 2) walls[x][z][15][3] *= 3;
                     else if(walls[x] != null && walls[x][z] != null && walls[x][z][10][3] == 1) walls[x][z][15][3] *= 2;
 
-                    if(walls[x] != null && walls[x][z-1] != null && walls[x][z-1][10][1] == 2) walls[x][z-1][15][1] *= 3;
+                    if     (walls[x] != null && walls[x][z-1] != null && walls[x][z-1][10][1] == 2) walls[x][z-1][15][1] *= 3;
                     else if(walls[x] != null && walls[x][z-1] != null && walls[x][z-1][10][1] == 1) walls[x][z-1][15][1] *= 2;
 
-                    if(walls[x] != null && walls[x][z] != null && walls[x][z][11][3] > 0) walls[x][z][11][3] *= horizontalWalls == 1 ? 5 : 2;
-
+                    if(walls[x] != null && walls[x][ z ] != null && walls[x][ z ][11][3] > 0) walls[x][ z ][11][3] *= horizontalWalls == 1 ? 5 : 2;
                     if(walls[x] != null && walls[x][z-1] != null && walls[x][z-1][11][1] > 0) walls[x][z-1][11][1] *= 3;
-
                 }
-
             }
         }
 
@@ -1830,16 +1926,16 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 tileId = tileId + 1
 
                 //Human
-                if(walls[z][x][6] != 0){
+                if(walls[z][x][W_HUMAN_TYPE] != 0){
                     //Position of tile
                     let humanPos = [(x * 0.3 * tileScale[0]) + startX , (z * 0.3 * tileScale[2]) + startZ]
                     let humanRot = humanRotation[walls[z][x][7]]
                     //Randomly move human left and right on wall
                     let randomOffset = [0, 0]
-                    if ((inBounds(z-1, x) && walls[z-1][x][6] == 0) &&  // ensure no adjacent tile victims (random offset can place too close)
-                        (inBounds(z+1, x) && walls[z+1][x][6] == 0) && 
-                        (inBounds(z, x-1) && walls[z][x-1][6] == 0) && 
-                        (inBounds(z, x+1) && walls[z][x+1][6] == 0)) {
+                    if ((inBounds(z-1, x  ) && walls[z-1][x  ][W_HUMAN_TYPE] == 0) &&  // ensure no adjacent tile victims (random offset can place too close)
+                        (inBounds(z+1, x  ) && walls[z+1][x  ][W_HUMAN_TYPE] == 0) && 
+                        (inBounds(z  , x-1) && walls[z  ][x-1][W_HUMAN_TYPE] == 0) && 
+                        (inBounds(z  , x+1) && walls[z  ][x+1][W_HUMAN_TYPE] == 0)) {
                         if(walls[z][x][7] == 0 || walls[z][x][7] == 2){
                             //X offset for top and bottom
                             randomOffset = [orgRound(getRandomArbitrary(-0.1 * tileScale[0], 0.1 * tileScale[0]), 0.001), 0]
@@ -1849,29 +1945,44 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         }
                     }
 
-                    if (walls[z][x][6] >= 5 && walls[z][x][6] <= 8){ //hazards
+                    if (walls[z][x][W_HUMAN_TYPE] >= 5 && walls[z][x][W_HUMAN_TYPE] <= 8){ //hazards
                         humanPos[0] = humanPos[0] + humanOffsetThermal[walls[z][x][7]][0] + randomOffset[0]
                         humanPos[1] = humanPos[1] + humanOffsetThermal[walls[z][x][7]][1] + randomOffset[1]
                         let score = 30
                         if(walls[z][x][8]) score = 10
-                        allHazards = allHazards + hazardPart({x: humanPos[0], z: humanPos[1], rot: humanRot, id: hazardId, type: hazardTypes[walls[z][x][6] - 5], score: score})
+                        allHazards = allHazards + hazardPart({
+                            x: humanPos[0],
+                            z: humanPos[1],
+                            rot: humanRot,
+                            frontRotation: 3.14/2, //TODO: pass rotation
+                            id: hazardId,
+                            type: hazardTypes[walls[z][x][W_HUMAN_TYPE] - 5],
+                            score: score
+                        })
                         hazardId = hazardId + 1
-                    }else{ //humans
+                    } else { //humans
                         humanPos[0] = humanPos[0] + humanOffset[walls[z][x][7]][0] + randomOffset[0]
                         humanPos[1] = humanPos[1] + humanOffset[walls[z][x][7]][1] + randomOffset[1]
                         let score = 15
                         if(walls[z][x][8]) score = 5
-                        allHumans = allHumans + visualHumanPart({x: humanPos[0], z: humanPos[1], rot: humanRot, id: humanId, type: humanTypesVisual[walls[z][x][6] - 1], score: score})
+                        allHumans = allHumans + visualHumanPart({
+                            x: humanPos[0],
+                            z: humanPos[1],
+                            rot: humanRot,
+                            frontRotation: 3.14/2, //TODO: pass rotation
+                            id: humanId,
+                            type: humanTypesVisual[walls[z][x][W_HUMAN_TYPE] - 1],
+                            score: score
+                        })
                         humanId = humanId + 1
                     }
                 }
-                if(walls[z][x][13]){
+                if(walls[z][x][W_HALF_WALL_VIC]){
                     for (var i in $scope.range(16)) {
-                        if (walls[z][x][13][i]) {
-                            let humanType = Number(walls[z][x][13][i]);
+                        if (walls[z][x][W_HALF_WALL_VIC][i]) {
+                            let humanType = Number(walls[z][x][W_HALF_WALL_VIC][i]);
                             let humanPos = [(x * 0.3 * tileScale[0]) + startX , (z * 0.3 * tileScale[2]) + startZ]
                             let score = 30
-                            let j = 0
                             if(walls[z][x][8]) score = 10
                             //Curved Wall Humans
                             let curveWallArr = JSON.parse(walls[z][x][12]);
@@ -1899,11 +2010,27 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                     console.log("Z: " + humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside);
                                     score = score / 2;
                                     //allHumans = allHumans + visualHumanPart({x: humanPos[0], z: humanPos[1], rot: humanRotationCurve[curveDir], id: humanId, type: humanTypesVisual[walls[z][x][13][i] - 1], score: score})
-                                    allHumans = allHumans + visualHumanPart({x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside, z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside, rot: humanRotationCurve[curveDir], id: humanId, type: humanTypesVisual[walls[z][x][13][i] - 1], score: score})
+                                    allHumans = allHumans + visualHumanPart({
+                                        x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside,
+                                        z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside,
+                                        rot: humanRotationCurve[curveDir],
+                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        id: humanId,
+                                        type: humanTypesVisual[walls[z][x][W_HALF_WALL_VIC][i] - 1],
+                                        score: score
+                                    })
                                     humanId = humanId + 1
                                 }
                                 else if (humanType>= 5 && humanType <= 8) {
-                                    allHazards = allHazards + hazardPart({x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside, z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside, rot: humanRotationCurve[curveDir], id: hazardId, type: hazardTypes[walls[z][x][13][i] - 5], score: score})
+                                    allHazards = allHazards + hazardPart({
+                                        x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside,
+                                        z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside,
+                                        rot: humanRotationCurve[curveDir],
+                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        id: hazardId,
+                                        type: hazardTypes[walls[z][x][W_HALF_WALL_VIC][i] - 5],
+                                        score: score
+                                    })
                                     hazardId = hazardId + 1
                                 }
                             }
@@ -1911,11 +2038,27 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                             else {
                                 if (humanType >= 0 && humanType <= 3) {
                                     score = score / 2;
-                                    allHumans = allHumans + visualHumanPart({x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0], z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2], rot: humanRotation[i % 4], id: humanId, type: humanTypesVisual[walls[z][x][13][i] - 1], score: score})
+                                    allHumans = allHumans + visualHumanPart({
+                                        x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0],
+                                        z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2],
+                                        rot: humanRotation[i % 4],
+                                        frontRotation: 0,
+                                        id: humanId,
+                                        type: humanTypesVisual[walls[z][x][W_HALF_WALL_VIC][i] - 1],
+                                        score: score
+                                    })
                                     humanId = humanId + 1
                                 }
                                 else if (humanType>= 5 && humanType <= 8) {
-                                    allHazards = allHazards + hazardPart({x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0], z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2], rot: humanRotation[i % 4], id: hazardId, type: hazardTypes[walls[z][x][13][i] - 5], score: score})
+                                    allHazards = allHazards + hazardPart({
+                                        x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0],
+                                        z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2],
+                                        rot: humanRotation[i % 4],
+                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        id: hazardId,
+                                        type: hazardTypes[walls[z][x][W_HALF_WALL_VIC][i] - 5],
+                                        score: score
+                                    })
                                     hazardId = hazardId + 1
                                 }
                             }
@@ -1923,7 +2066,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     }
                 }
                 //Obstacle
-                if(walls[z][x][9] != 0){
+                if(walls[z][x][W_OBSTACLE] != 0){
                     //Default height for static obstacle
                     let height = 0.15
 
@@ -1955,7 +2098,14 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     //Random rotation for obstacle
                     let rot = orgRound(getRandomArbitrary(0.00, 6.28), 0.001)
 
-                    allObstacles += obstaclePart({id: obstacleId, xSize: width * tileScale[0], ySize: height * tileScale[1], zSize: depth * tileScale[2], x: pos[0], y: 0 , z: pos[1], rot: rot})
+                    allObstacles += obstaclePart({
+                        id: obstacleId,
+                        xSize: width * tileScale[0],
+                        ySize: height * tileScale[1],
+                        zSize: depth * tileScale[2],
+                        x: pos[0], y: 0, z: pos[1],
+                        rot: rot
+                    })
                     //Increment id counter
                     obstacleId = obstacleId + 1
 
@@ -1971,10 +2121,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             allHazards += scoringElements[1];
         }
         else {
-            N = 0
-            E = 1
-            S = 2
-            W = 3
             room4 = $scope.area4[$scope.area4Room.type]
             if ($scope.area4Room.type != 0 && $scope.connect14 && $scope.connect34) {
                 connect14 = [($scope.connect14[0] - 1) / 2, ($scope.connect14[1] - 1) / 2]
@@ -1985,30 +2131,28 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
                 area4X = connect14[0]
                 area4Y = connect14[1]
-                if (connect34[0] - connect14[0] == room4.room3Tile[0] - room4.room1Tile[0] &&
-                    connect34[1] - connect14[1] == room4.room3Tile[1] - room4.room1Tile[1])
-                    area4Rot = N
+
+                if      (connect34[0] - connect14[0] == room4.room3Tile[0] - room4.room1Tile[0] &&
+                         connect34[1] - connect14[1] == room4.room3Tile[1] - room4.room1Tile[1]) area4Rot = DIR_NORTH;
                 else if (connect14[0] - connect34[0] == room4.room3Tile[1] - room4.room1Tile[1] &&
-                    connect34[1] - connect14[1] == room4.room3Tile[0] - room4.room1Tile[0])
-                    area4Rot = E
+                         connect34[1] - connect14[1] == room4.room3Tile[0] - room4.room1Tile[0]) area4Rot = DIR_EAST;
                 else if (connect14[0] - connect34[0] == room4.room3Tile[0] - room4.room1Tile[0] &&
-                    connect14[1] - connect34[1] == room4.room3Tile[1] - room4.room1Tile[1])
-                    area4Rot = S
+                         connect14[1] - connect34[1] == room4.room3Tile[1] - room4.room1Tile[1]) area4Rot = DIR_SOUTH;
                 else if (connect34[0] - connect14[0] == room4.room3Tile[1] - room4.room1Tile[1] &&
-                    connect14[1] - connect34[1] == room4.room3Tile[0] - room4.room1Tile[0])
-                    area4Rot = W
+                         connect14[1] - connect34[1] == room4.room3Tile[0] - room4.room1Tile[0]) area4Rot = DIR_WEST;
+
                 startTrans = vectorRotate(room4.room1Tile, area4Rot)
                 area4X -= startTrans[0]
                 area4Y -= startTrans[1]
-                allTiles = allTiles + area4Part({roomNum: $scope.area4Room.type, x: area4X, y: area4Y, rot: area4Rot, width: width, height: height, xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2], area4Width: room4.width, area4Height: room4.height})
+                allTiles = allTiles + area4Part({ roomNum: $scope.area4Room.type, x: area4X, y: area4Y, rot: area4Rot, width: width, height: height, xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2], area4Width: room4.width, area4Height: room4.height})
 
                 area4Width = room4.width
                 area4Height = room4.height
-                if (area4Rot == E || area4Rot == W) {
+                if (area4Rot == DIR_EAST || area4Rot == DIR_WEST) {
                     area4Width = room4.height
                     area4Height = room4.width
                 }
-                xOffset = -(width * 0.3 * tileScale[0] / 2.0) + area4X * 0.3 * tileScale[0]
+                xOffset = -(width  * 0.3 * tileScale[0] / 2.0) + area4X * 0.3 * tileScale[0]
                 zOffset = -(height * 0.3 * tileScale[1] / 2.0) + area4Y * 0.3 * tileScale[1]
                 area4Humans = room4.humans
                 for (i = 0; i < area4Humans.length; i++) {
@@ -2017,6 +2161,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: vicPosTrans[0] + xOffset,
                         z: vicPosTrans[1] + zOffset,
                         rot: area4Humans[i].rot + area4Rot * -1.57,
+                        frontRotation: 3.14/2, //TODO: pass rotation
                         id: humanId,
                         type: area4Humans[i].type,
                         score: area4Humans[i].score,
@@ -2031,6 +2176,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: hazPosTrans[0] + xOffset,
                         z: hazPosTrans[1] + zOffset,
                         rot: area4Hazards[i].rot + area4Rot * -1.57,
+                        frontRotation: 3.14/2, //TODO: pass rotation
                         id: hazardId,
                         type: area4Hazards[i].type,
                         score: area4Hazards[i].score,
@@ -2391,6 +2537,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
             let vicWidth = 0.016;
             let angle = 0;
+            let frontAngle = 0; //TODO: randomize front angle??
             let nextPoint = 0;
             let prevPoint = 0;
 
@@ -2438,6 +2585,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             if (prevPoint[1] - nextPoint[1] < 0)
                 angle = 3.14 + angle
 
+            finalAngles = axis_angle_to_quaternion({x: 0, y: angle, z: 0}) //TODO: pass front angle
+
             let vicX = parseFloat(((closePoint[1] / imgWidth) * room4Width).toFixed(roundDigits)) + room4xOffset;
             let vicY = parseFloat(((closePoint[0] / imgHeight) * room4Height).toFixed(roundDigits)) + room4zOffset;
 
@@ -2445,32 +2594,31 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             if ($scope.room4VicTypes.length != vicContours.size()) {
                 rand = parseInt(Math.random() * scoringElem.length);
                 $scope.room4VicTypes.push(rand);
-            }
-            else
+            } else {
                 rand = $scope.room4VicTypes[x];
+            }
             if (rand <= 2) { // victim
                 outputStrVic += `
                     Victim {
                         translation `;
                     outputStrVic += vicX.toString() + ' 0 ' + vicY.toString();
                     outputStrVic += `
-                        rotation 0 1 0 `;
-                    outputStrVic += angle.toString() + `
+                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.w}`;
+                    outputStrVic += `
                         name "Victim` + startHumanId.toString() + `"
                         type "` + scoringElem[rand] + `"
                         scoreWorth 15
                     }
                     `;
                 startHumanId += 1;
-            }
-            else { // hazard
+            } else { // hazard
                 outputStrHaz += `
                     HazardMap {
                         translation `;
                     outputStrHaz += vicX.toString() + ' 0 ' + vicY.toString();
                     outputStrHaz += `
-                        rotation 0 1 0 `;
-                    outputStrHaz += angle.toString() + `
+                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.w}`;
+                    outputStrHaz += `
                         name "Hazard` + startHazardId.toString() + `"
                         type "` + scoringElem[rand] + `"
                         scoreWorth 30
