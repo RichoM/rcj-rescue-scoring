@@ -1592,14 +1592,13 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm} for reference implementation in java.
         */
         function quaternion_to_axis_angle(q) {
-            // if w>1 acos and sqrt will produce errors, this can't happen if quaternion is normalized
+            // if w>1, acos and sqrt will produce errors
             if (q.w > 1) normalize_quaternion(q);
             let angle = 2 * Math.acos(q.w);
-            let s = Math.sqrt(1-q.w*q.w); // if quaternion normalized then w is less than 1, so term is always positive
+            let s = Math.sqrt(1-q.w*q.w); // if quaternion is normalized w is less than 1, so term is always positive
             if (s < 0.001) { // avoid divide by zero
-                // if s is close to zero, axis direction isn't important
                 return {
-                    x: q.x, // if it's important that axis is normalized then replace with x=1; y=z=0;
+                    x: q.x,
                     y: q.y,
                     z: q.z,
                     angle: angle
@@ -1614,23 +1613,33 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             }
         }
 
-        function calc_rot(y_rot, front_rot) {
-            //TODO: calculate frontRotation correctly
-            let front_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
-            let y_rot_quat     = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot}) 
+        /**
+        * Calculate rotation for wall tokens
+        * @param {number} y_rot
+        * @param {number} front_rot
+        * @returns {AxisAngle}
+        */
+        function calculateWallTokenRot(y_rot, front_rot) {
+            let z_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
+            let y_rot_quat = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot    }) 
 
-            let final_rot_quat = multiply_quaternions(y_rot_quat, front_rot_quat)
-            let final_rot = quaternion_to_axis_angle(final_rot_quat)
+            /**
+            * Multiplying two quaternions is equivalent to applying their rotations one after the
+            * other in a procedural way, just that the second factor is applied first. So we basically do:
+            *
+            *  . . . .                      .                        .
+            *  .     .  rot. on z axis    .   .    rot. on y axis   . .
+            *  .     .       -->        .       .        -->       .   .
+            *  . . . .                    .   .                     . .
+            *                               .                        .
+            */
+            let final_rot_quat = multiply_quaternions(y_rot_quat, z_rot_quat)
 
-            console.log("y_rot_quat: ", y_rot_quat);
-            console.log("front_rot_quat: ", front_rot_quat);
-            console.log("final_rot_quat: ", final_rot_quat);
-            console.log("final_rot: ", final_rot);
-            return final_rot;
+            return quaternion_to_axis_angle(final_rot_quat)
         }
 
         function visualHumanPart({x, z, rot, frontRotation, id, type, score}) {
-            rq = calc_rot(rot, frontRotation)
+            rq = calculateWallTokenRot(rot, frontRotation)
             return `
             Victim {
                 translation ${x} 0 ${z}
@@ -1643,7 +1652,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
 
         function hazardPart({x, z, rot, frontRotation, id, type, score}) {
-            rq = calc_rot(rot, frontRotation)
+            rq = calculateWallTokenRot(rot, frontRotation)
             return `
             HazardMap {
                 translation ${x} 0 ${z}
