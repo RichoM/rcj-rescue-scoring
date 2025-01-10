@@ -58,7 +58,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.01,
                     z: 0.238,
                     rot: 1.5708,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "harmed",
                     score: 15,
                 }
@@ -68,7 +68,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.548,
                     z: 0.193396,
                     rot: 1.05,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "P",
                     score: 30,
                 }
@@ -86,7 +86,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.33,
                     z: 0.3,
                     rot: 0,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "unharmed",
                     score: 15,
                 },
@@ -94,7 +94,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.4991,
                     z: 0.27366,
                     rot: 2.0944,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "harmed",
                     score: 15,
                 }
@@ -104,7 +104,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.14,
                     z: 0.299,
                     rot: 0,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "C",
                     score: 30,
                 },
@@ -112,7 +112,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.564142,
                     z: 0.474142,
                     rot: 0.785398,
-                    frontRotation: 0, //TODO: pass rotation
+                    frontRotation: Math.random() * 3.14,
                     type: "P",
                     score: 30,
                 }
@@ -1187,7 +1187,13 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     //tag proto file creation
-    
+
+    const HUMAN_PLACE_TOP    = 0;
+    const HUMAN_PLACE_RIGHT  = 1;
+    const HUMAN_PLACE_BOTTOM = 2;
+    const HUMAN_PLACE_LEFT   = 3;
+
+
     const W_REACHABLE     = 0;
     const W_ARWALL        = 1;
     const W_CHECKPOINT    = 2;
@@ -1207,6 +1213,137 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     const W_ROOMNUM       = 16;
     const W_TOKEN_FRONT_ROT = 17;
     const W_HALF_WALL_VIC_ROT = 18;
+    
+
+    // tag quaternions
+    /**
+    * @typedef {Object} Quaternion
+    * @property {number} x
+    * @property {number} y
+    * @property {number} z
+    * @property {number} w
+    */
+
+    /**
+    * @param {Quaternion} q
+    * @returns {Quaternion}
+    * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
+    */
+    function normalize_quaternion(q) {
+        let n = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+        return {
+            x: q.x / n,
+            y: q.y / n,
+            z: q.z / n,
+            w: q.w / n
+        }
+    }
+
+    /**
+    * @param {Quaternion} q1
+    * @param {Quaternion} q2
+    * @returns {Quaternion}
+    * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
+    */
+    function multiply_quaternions(q1, q2) {
+        return {
+            x:  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x,
+            y: -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y,
+            z:  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z,
+            w: -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w
+        }
+    }
+
+    /**
+    * @typedef {Object} AxisAngle
+    * @property {number} x
+    * @property {number} y
+    * @property {number} z
+    * @property {number} angle
+    */
+
+    /**
+    * @param {AxisAngle} a
+    * @returns {Quaternion}
+    * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm} for reference implementation in java.
+    */
+    function axis_angle_to_quaternion(a) {
+        let s = Math.sin(a.angle/2);
+        return {
+            x: a.x * s,
+            y: a.y * s,
+            z: a.z * s,
+            w: Math.cos(a.angle/2)
+        }
+    }
+
+    /**
+    * @param {Quaternion} q
+    * @returns {AxisAngle}
+    * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm} for reference implementation in java.
+    */
+    function quaternion_to_axis_angle(q) {
+        // if w>1, acos and sqrt will produce errors
+        if (q.w > 1) normalize_quaternion(q);
+        let angle = 2 * Math.acos(q.w);
+        let s = Math.sqrt(1-q.w*q.w); // if quaternion is normalized w is less than 1, so term is always positive
+        if (s < 0.001) { // avoid divide by zero
+            return {
+                x: q.x,
+                y: q.y,
+                z: q.z,
+                angle: angle
+            }
+        } else {
+            return {
+                x: q.x / s, // normalize axis
+                y: q.y / s,
+                z: q.z / s,
+                angle: angle
+            }
+        }
+    }
+
+    // endtag quaternions
+
+    // tag rotation wall tokens
+    // tag wall token rotation
+    // tag victim rotation
+
+    /**
+    * Calculate rotation for wall tokens
+    * @param {number} y_rot
+    * @param {number} front_rot
+    * @returns {AxisAngle}
+    */
+    function calculateWallTokenRot(y_rot, front_rot) {
+        console.log("front_rot: ", front_rot)
+        let z_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
+        let y_rot_quat = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot    }) 
+
+        /**
+        * Multiplying two quaternions is equivalent to applying their rotations one after the
+        * other in a procedural way, just that the second factor is applied first. So we basically do:
+        *
+        *  . . . .                      .                        .
+        *  .     .  rot. on z axis    .   .    rot. on y axis   . .
+        *  .     .       -->        .       .        -->       .   .
+        *  . . . .                    .   .                     . .
+        *                               .                        .
+        */
+        let final_rot_quat = multiply_quaternions(y_rot_quat, z_rot_quat)
+
+        let final_rot = quaternion_to_axis_angle(final_rot_quat)
+        console.log("z_rot_quat", z_rot_quat);
+        console.log("y_rot_quat", y_rot_quat);
+        console.log("final_rot_quat", final_rot_quat);
+        console.log("final_rot", final_rot)
+        return final_rot;
+    }
+
+    // endtag rotation wall tokens
+    // endtag wall token rotation
+    // endtag victim rotation
 
     function createWorld(){
         let walls = [];
@@ -1316,10 +1453,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     } 
                 }
 
-                const HUMAN_PLACE_TOP    = 0;
-                const HUMAN_PLACE_RIGHT  = 1;
-                const HUMAN_PLACE_BOTTOM = 2;
-                const HUMAN_PLACE_LEFT   = 3;
                 let humanPlace = HUMAN_PLACE_TOP;
 
 
@@ -1349,7 +1482,11 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         humanPlace = HUMAN_PLACE_LEFT;
                     }
                 }
-
+                
+                /**
+                 * @param {number} d
+                 * @returns {number}
+                 */
                 function degreesToRadians(d) {
                     return d * (Math.PI / 180);
                 }
@@ -1560,126 +1697,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
         `;
 
-
-        /**
-        * @typedef {Object} Quaternion
-        * @property {number} x
-        * @property {number} y
-        * @property {number} z
-        * @property {number} w
-        */
-
-        /**
-        * @param {Quaternion} q
-        * @returns {Quaternion}
-        * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
-        */
-        function normalize_quaternion(q) {
-            let n = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
-            return {
-                x: q.x / n,
-                y: q.y / n,
-                z: q.z / n,
-                w: q.w / n
-            }
-        }
-
-        /**
-        * @param {Quaternion} q1
-        * @param {Quaternion} q2
-        * @returns {Quaternion}
-        * @see {@link https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm} for reference implementation in java.
-        */
-        function multiply_quaternions(q1, q2) {
-            return {
-                x:  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x,
-                y: -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y,
-                z:  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z,
-                w: -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w
-            }
-        }
-
-        /**
-        * @typedef {Object} AxisAngle
-        * @property {number} x
-        * @property {number} y
-        * @property {number} z
-        * @property {number} angle
-        */
-
-        /**
-        * @param {AxisAngle} a
-        * @returns {Quaternion}
-        * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm} for reference implementation in java.
-        */
-        function axis_angle_to_quaternion(a) {
-            let s = Math.sin(a.angle/2);
-            return {
-                x: a.x * s,
-                y: a.y * s,
-                z: a.z * s,
-                w: Math.cos(a.angle/2)
-            }
-        }
-
-        /**
-        * @param {Quaternion} q
-        * @returns {AxisAngle}
-        * @see {@link https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm} for reference implementation in java.
-        */
-        function quaternion_to_axis_angle(q) {
-            // if w>1, acos and sqrt will produce errors
-            if (q.w > 1) normalize_quaternion(q);
-            let angle = 2 * Math.acos(q.w);
-            let s = Math.sqrt(1-q.w*q.w); // if quaternion is normalized w is less than 1, so term is always positive
-            if (s < 0.001) { // avoid divide by zero
-                return {
-                    x: q.x,
-                    y: q.y,
-                    z: q.z,
-                    angle: angle
-                }
-            } else {
-                return {
-                    x: q.x / s, // normalize axis
-                    y: q.y / s,
-                    z: q.z / s,
-                    angle: angle
-                }
-            }
-        }
-
-        /**
-        * Calculate rotation for wall tokens
-        * @param {number} y_rot
-        * @param {number} front_rot
-        * @returns {AxisAngle}
-        */
-        function calculateWallTokenRot(y_rot, front_rot) {
-            console.log("front_rot: ", front_rot)
-            let z_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
-            let y_rot_quat = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot    }) 
-
-            /**
-            * Multiplying two quaternions is equivalent to applying their rotations one after the
-            * other in a procedural way, just that the second factor is applied first. So we basically do:
-            *
-            *  . . . .                      .                        .
-            *  .     .  rot. on z axis    .   .    rot. on y axis   . .
-            *  .     .       -->        .       .        -->       .   .
-            *  . . . .                    .   .                     . .
-            *                               .                        .
-            */
-            let final_rot_quat = multiply_quaternions(y_rot_quat, z_rot_quat)
-
-            console.log("z_rot_quat", z_rot_quat);
-            console.log("y_rot_quat", y_rot_quat);
-            console.log("final_rot_quat", final_rot_quat);
-
-            let final_rot = quaternion_to_axis_angle(final_rot_quat)
-            console.log("final_rot", final_rot)
-            return final_rot;
-        }
 
         function visualHumanPart({x, z, rot, frontRotation, id, type, score}) {
             r = calculateWallTokenRot(rot, frontRotation)
@@ -1981,17 +1998,17 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 if(walls[z][x][W_HUMAN_TYPE] != 0){
                     //Position of tile
                     let humanPos = [(x * 0.3 * tileScale[0]) + startX , (z * 0.3 * tileScale[2]) + startZ]
-                    let humanRot = humanRotation[walls[z][x][7]]
+                    let humanRot = humanRotation[walls[z][x][W_HUMAN_PLACE]]
                     //Randomly move human left and right on wall
                     let randomOffset = [0, 0]
                     if ((inBounds(z-1, x  ) && walls[z-1][x  ][W_HUMAN_TYPE] == 0) &&  // ensure no adjacent tile victims (random offset can place too close)
                         (inBounds(z+1, x  ) && walls[z+1][x  ][W_HUMAN_TYPE] == 0) && 
                         (inBounds(z  , x-1) && walls[z  ][x-1][W_HUMAN_TYPE] == 0) && 
                         (inBounds(z  , x+1) && walls[z  ][x+1][W_HUMAN_TYPE] == 0)) {
-                        if(walls[z][x][7] == 0 || walls[z][x][7] == 2){
+                        if(walls[z][x][W_HUMAN_PLACE] == HUMAN_PLACE_TOP || walls[z][x][W_HUMAN_PLACE] == HUMAN_PLACE_BOTTOM){
                             //X offset for top and bottom
                             randomOffset = [orgRound(getRandomArbitrary(-0.1 * tileScale[0], 0.1 * tileScale[0]), 0.001), 0]
-                        }else{
+                        } else {
                             //Z offset for left and right
                             randomOffset = [0, orgRound(getRandomArbitrary(-0.1 * tileScale[2], 0.1 * tileScale[2]), 0.001)]
                         }
@@ -2013,8 +2030,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         })
                         hazardId = hazardId + 1
                     } else { //humans
-                        humanPos[0] = humanPos[0] + humanOffset[walls[z][x][7]][0] + randomOffset[0]
-                        humanPos[1] = humanPos[1] + humanOffset[walls[z][x][7]][1] + randomOffset[1]
+                        humanPos[0] = humanPos[0] + humanOffset[walls[z][x][W_HUMAN_PLACE]][0] + randomOffset[0]
+                        humanPos[1] = humanPos[1] + humanOffset[walls[z][x][W_HUMAN_PLACE]][1] + randomOffset[1]
                         let score = 15
                         if(walls[z][x][8]) score = 5
                         allHumans = allHumans + visualHumanPart({
@@ -2053,7 +2070,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                 else {
                                     console.log("inside");
                                 }
-                                if (humanType >= 0 && humanType <= 3) {
+                                if (humanType >= 0 && humanType <= 3) { // is human victim
                                     console.log("HP: " + humanPos);
                                     console.log("Curve Offset: " + curveWallVicPos[ind] + " " + ind + " " + i);
                                     console.log("Curvedir: " + curveDir);
@@ -2075,7 +2092,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                     })
                                     humanId = humanId + 1
                                 }
-                                else if (humanType>= 5 && humanType <= 8) {
+                                else if (humanType>= 5 && humanType <= 8) { // is hazmat sign
                                     allHazards = allHazards + hazardPart({
                                         x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside,
                                         z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside,
@@ -2215,7 +2232,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: vicPosTrans[0] + xOffset,
                         z: vicPosTrans[1] + zOffset,
                         rot: area4Humans[i].rot + area4Rot * -1.57,
-                        frontRotation: 3.14/2, //TODO: pass rotation
+                        frontRotation: Math.random() * 3.14,
                         id: humanId,
                         type: area4Humans[i].type,
                         score: area4Humans[i].score,
@@ -2230,7 +2247,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: hazPosTrans[0] + xOffset,
                         z: hazPosTrans[1] + zOffset,
                         rot: area4Hazards[i].rot + area4Rot * -1.57,
-                        frontRotation: 3.14/2, //TODO: pass rotation
+                        frontRotation: Math.random() * 3.14,
                         id: hazardId,
                         type: area4Hazards[i].type,
                         score: area4Hazards[i].score,
@@ -2256,20 +2273,26 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
      // File APIに対応しているか確認
+     // Check if the File API is supported
         if (window.File) {
             var select = document.getElementById('select');
 
             // ファイルが選択されたとき
+            // when a file is selected
             select.addEventListener('change', function (e) {
                 // 選択されたファイルの情報を取得
+                // Get the data of the selected file.
                 var fileData = e.target.files[0];
 
                 var reader = new FileReader();
                 // ファイル読み取りに失敗したとき
+                // if reading the file failed
                 reader.onerror = function () {
                     alert('ファイル読み取りに失敗しました')
+                    alert('Failed to read the file')
                 }
                 // ファイル読み取りに成功したとき
+                // if the file was read correctly 
                 reader.onload = function () {
                     var data = JSON.parse(reader.result);
                     $scope.cells = data.cells;
@@ -2299,6 +2322,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 }
 
                 // ファイル読み取りを実行
+                // Actually read the file
                 reader.readAsText(fileData);
             }, false);
         }
@@ -2591,7 +2615,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
             let vicWidth = 0.016;
             let angle = 0;
-            let frontAngle = 0; //TODO: randomize front angle??
+            let frontAngle = Math.random() * 3.14;
             let nextPoint = 0;
             let prevPoint = 0;
 
@@ -2639,7 +2663,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             if (prevPoint[1] - nextPoint[1] < 0)
                 angle = 3.14 + angle
 
-            finalAngles = axis_angle_to_quaternion({x: 0, y: angle, z: 0}) //TODO: pass front angle
+            finalAngles = calculateWallTokenRot(angle, frontAngle);
 
             let vicX = parseFloat(((closePoint[1] / imgWidth) * room4Width).toFixed(roundDigits)) + room4xOffset;
             let vicY = parseFloat(((closePoint[0] / imgHeight) * room4Height).toFixed(roundDigits)) + room4zOffset;
@@ -2657,7 +2681,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         translation `;
                     outputStrVic += vicX.toString() + ' 0 ' + vicY.toString();
                     outputStrVic += `
-                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.w}`;
+                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.angle}`;
                     outputStrVic += `
                         name "Victim` + startHumanId.toString() + `"
                         type "` + scoringElem[rand] + `"
@@ -2671,7 +2695,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         translation `;
                     outputStrHaz += vicX.toString() + ' 0 ' + vicY.toString();
                     outputStrHaz += `
-                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.w}`;
+                        rotation ${finalAngles.x} ${finalAngles.y} ${finalAngles.z} ${finalAngles.angle}`;
                     outputStrHaz += `
                         name "Hazard` + startHazardId.toString() + `"
                         type "` + scoringElem[rand] + `"
