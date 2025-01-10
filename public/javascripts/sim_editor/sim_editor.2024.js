@@ -177,6 +177,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     $scope.cells[index].tile.halfWallIn = [0, 0, 0, 0];
                 if(!$scope.cells[index].tile.halfWallVic)
                     $scope.cells[index].tile.halfWallVic = [];
+                if(!$scope.cells[index].tile.halfWallVicRots)
+                    $scope.cells[index].tile.halfWallVicRots = [];
             }
         }
         
@@ -1203,13 +1205,35 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     const W_FLOOR_COLOR   = 14;
     const W_HALF_WALL_OUT_INFO = 15;
     const W_ROOMNUM       = 16;
+    const W_TOKEN_FRONT_ROT = 17;
+    const W_HALF_WALL_VIC_ROT = 18;
 
     function createWorld(){
         let walls = [];
         for(let x=1,l=$scope.length*2+1;x<l;x+=2){
             let row = [];
             for(let z=1,m=$scope.width*2+1;z<m;z+=2){
-                row.push([false, [0, 0, 0, 0], false, false, false, false, 0, 0, false, false,'', '', '', [], '', 0]);
+                row.push([
+                    false,       // W_REACHABLE
+                    [0, 0, 0, 0],// W_ARWALL
+                    false,       // W_CHECKPOINT
+                    false,       // W_BLACK
+                    false,       // W_START
+                    false,       // W_SWAMP
+                    0,           // W_HUMAN_TYPE
+                    0,           // W_HUMAN_PLACE
+                    false,       // W_LINEAR
+                    false,       // W_OBSTACLE
+                    '',          // W_HALF_WALL_OUT
+                    '',          // W_HALF_WALL_IN 
+                    '',          // W_CURVE_WALL
+                    [],          // W_HALF_WALL_VIC
+                    '',          // W_FLOOR_COLOR
+                    0,           // W_HALF_WALL_OUT_INFO
+                    0,           // W_ROOMNUM
+                    0,           // W_TOKEN_FRONT_ROT
+                    0,           // W_HALF_WALL_VIC_ROT
+                ]);
             }
             walls.push(row);
         }
@@ -1298,6 +1322,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 const HUMAN_PLACE_LEFT   = 3;
                 let humanPlace = HUMAN_PLACE_TOP;
 
+
                 let roomNum = 1;
                 let floorColor = '0.635 0.635 0.635';
                 let halfWallOutVar = [0, 0, 0, 0];
@@ -1324,7 +1349,16 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         humanPlace = HUMAN_PLACE_LEFT;
                     }
                 }
-                
+
+                function degreesToRadians(d) {
+                    return d * (Math.PI / 180);
+                }
+
+                let wallTokenFrontRot = 0;
+                if (thisCell.tile && thisCell.tile.single_victim_rotation) {
+                    wallTokenFrontRot = degreesToRadians(thisCell.tile.single_victim_rotation)
+                }
+
                 if (thisCell.tile && thisCell.tile.color) {
                     floorColor = '';
                     if (thisCell.tile.color == '#08D508') // area 1 <-> 4
@@ -1357,9 +1391,11 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     walls[(y-1)/2][(x-1)/2][W_HALF_WALL_IN ] = halfWallInVar;
                     walls[(y-1)/2][(x-1)/2][W_CURVE_WALL   ] = curveWallVar;
                     walls[(y-1)/2][(x-1)/2][W_HALF_WALL_VIC] = thisCell.tile.halfWallVic;
+                    walls[(y-1)/2][(x-1)/2][W_HALF_WALL_VIC_ROT] = thisCell.tile.halfWallVicRots.map(Number).map(degreesToRadians);
                     walls[(y-1)/2][(x-1)/2][W_FLOOR_COLOR  ] = floorColor;
                     walls[(y-1)/2][(x-1)/2][W_HALF_WALL_OUT_INFO] = halfWallOutInfo;
                     walls[(y-1)/2][(x-1)/2][W_ROOMNUM      ] = roomNum;
+                    walls[(y-1)/2][(x-1)/2][W_TOKEN_FRONT_ROT] = wallTokenFrontRot;
                 }
             }
         }
@@ -1620,6 +1656,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         * @returns {AxisAngle}
         */
         function calculateWallTokenRot(y_rot, front_rot) {
+            console.log("front_rot: ", front_rot)
             let z_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
             let y_rot_quat = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot    }) 
 
@@ -1635,15 +1672,21 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             */
             let final_rot_quat = multiply_quaternions(y_rot_quat, z_rot_quat)
 
-            return quaternion_to_axis_angle(final_rot_quat)
+            console.log("z_rot_quat", z_rot_quat);
+            console.log("y_rot_quat", y_rot_quat);
+            console.log("final_rot_quat", final_rot_quat);
+
+            let final_rot = quaternion_to_axis_angle(final_rot_quat)
+            console.log("final_rot", final_rot)
+            return final_rot;
         }
 
         function visualHumanPart({x, z, rot, frontRotation, id, type, score}) {
-            rq = calculateWallTokenRot(rot, frontRotation)
+            r = calculateWallTokenRot(rot, frontRotation)
             return `
             Victim {
                 translation ${x} 0 ${z}
-                rotation ${rq.x} ${rq.y} ${rq.z} ${rq.angle}
+                rotation ${r.x} ${r.y} ${r.z} ${r.angle}
                 name "Victim${id}"
                 type "${type}"
                 scoreWorth ${score}
@@ -1652,11 +1695,11 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
 
         function hazardPart({x, z, rot, frontRotation, id, type, score}) {
-            rq = calculateWallTokenRot(rot, frontRotation)
+            r = calculateWallTokenRot(rot, frontRotation)
             return `
             HazardMap {
                 translation ${x} 0 ${z}
-                rotation ${rq.x} ${rq.y} ${rq.z} ${rq.angle}
+                rotation ${r.x} ${r.y} ${r.z} ${r.angle}
                 name "Hazard${id}"
                 type "${type}"
                 scoreWorth ${score}
@@ -1963,7 +2006,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                             x: humanPos[0],
                             z: humanPos[1],
                             rot: humanRot,
-                            frontRotation: 3.14/2, //TODO: pass rotation
+                            frontRotation: walls[z][x][W_TOKEN_FRONT_ROT],
                             id: hazardId,
                             type: hazardTypes[walls[z][x][W_HUMAN_TYPE] - 5],
                             score: score
@@ -1978,7 +2021,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                             x: humanPos[0],
                             z: humanPos[1],
                             rot: humanRot,
-                            frontRotation: 3.14/2, //TODO: pass rotation
+                            frontRotation: walls[z][x][W_TOKEN_FRONT_ROT],
                             id: humanId,
                             type: humanTypesVisual[walls[z][x][W_HUMAN_TYPE] - 1],
                             score: score
@@ -1991,6 +2034,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         if (walls[z][x][W_HALF_WALL_VIC][i]) {
                             let humanType = Number(walls[z][x][W_HALF_WALL_VIC][i]);
                             let humanPos = [(x * 0.3 * tileScale[0]) + startX , (z * 0.3 * tileScale[2]) + startZ]
+                            let humanFrontRotation = walls[z][x][W_HALF_WALL_VIC_ROT][i];
+                            if (humanFrontRotation === undefined) humanFrontRotation = 0;
                             let score = 30
                             if(walls[z][x][8]) score = 10
                             //Curved Wall Humans
@@ -2023,7 +2068,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                         x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside,
                                         z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside,
                                         rot: humanRotationCurve[curveDir],
-                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        frontRotation: humanFrontRotation,
                                         id: humanId,
                                         type: humanTypesVisual[walls[z][x][W_HALF_WALL_VIC][i] - 1],
                                         score: score
@@ -2035,7 +2080,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                         x: humanPos[0] + curveWallVicPos[ind][0] + humanOffsetCurve[curveDir][0] * inside,
                                         z: humanPos[1] + curveWallVicPos[ind][1] + humanOffsetCurve[curveDir][1] * inside,
                                         rot: humanRotationCurve[curveDir],
-                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        frontRotation: humanFrontRotation,
                                         id: hazardId,
                                         type: hazardTypes[walls[z][x][W_HALF_WALL_VIC][i] - 5],
                                         score: score
@@ -2051,7 +2096,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                         x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0],
                                         z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2],
                                         rot: humanRotation[i % 4],
-                                        frontRotation: 0,
+                                        frontRotation: humanFrontRotation,
                                         id: humanId,
                                         type: humanTypesVisual[walls[z][x][W_HALF_WALL_VIC][i] - 1],
                                         score: score
@@ -2063,7 +2108,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                                         x: humanPos[0] + halfWallVicPos[i][0] * tileScale[0],
                                         z: humanPos[1] + halfWallVicPos[i][1] * tileScale[2],
                                         rot: humanRotation[i % 4],
-                                        frontRotation: 3.14/2, // TODO: pass rotation
+                                        frontRotation: humanFrontRotation,
                                         id: hazardId,
                                         type: hazardTypes[walls[z][x][W_HALF_WALL_VIC][i] - 5],
                                         score: score
