@@ -1,3 +1,21 @@
+/* Tags:
+ *      recalculate
+ *      proto file creation
+ *      quaternions
+ *      rotation wall tokens
+ *      json read
+ *      custom room 4
+ *      max score
+ *      draw custom room 4
+ *
+ *  You can use the search function in your editor with "tag nameoftag" to more easily navigate around the file.
+ *  For example, starting to search:
+ *
+ *      tag quat
+ *
+ *  should get you to the section of about quaternions.
+ */
+
 // register the directive with your app module
 var app = angular.module('SimEditor', ['ngTouch','ngAnimate', 'ui.bootstrap', 'pascalprecht.translate', 'ngCookies']);
 
@@ -156,6 +174,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     $scope.isUndefined = function (thing) {
         return (typeof thing === "undefined");
     }
+
+    // tag recalculate
     $scope.recalculateLinear = function () {
         console.log("update");
         //console.log($scope.cells)
@@ -1304,11 +1324,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
     }
 
-    // endtag quaternions
-
     // tag rotation wall tokens
-    // tag wall token rotation
-    // tag victim rotation
 
     /**
     * Calculate rotation for wall tokens
@@ -1340,10 +1356,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         console.log("final_rot", final_rot)
         return final_rot;
     }
-
-    // endtag rotation wall tokens
-    // endtag wall token rotation
-    // endtag victim rotation
 
     function createWorld(){
         let walls = [];
@@ -2272,6 +2284,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
     }
 
+    // tag json read
+
      // File APIに対応しているか確認
      // Check if the File API is supported
         if (window.File) {
@@ -2364,7 +2378,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             useCustomRoom4.style.display = "none";
         }
     }
-
+    
+    // tag custom room 4
     function room4CorrectSize() {
         return true;
         //let img = cv.imread(imgElement);
@@ -2817,6 +2832,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         $scope.recalculateLinear();
     }
 
+    // modals
     $scope.open = function (x, y, z) {
         if ($scope.selectRoom == -1) {
             var modalInstance = $uibModal.open({
@@ -2840,7 +2856,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
     };
 
-
+    // tag max score
     $scope.openMaxScore = function(){
         let victimScore = 0;
         let checkpointScore = 0;
@@ -2928,7 +2944,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         })
 
     }
-
+    
     $scope.openCustomRoom4 = function() {
         if ($scope.roomTiles[2].length > 0) {
             let minX = -1;
@@ -3098,6 +3114,7 @@ app.controller('CustomRoom4ModalCtrl',['$scope', '$uibModalInstance', function (
     }
 }]);
 
+// tag draw custom room 4
 app.directive("drawing", function(){
     return {
         restrict: "A",
