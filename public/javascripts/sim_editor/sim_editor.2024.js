@@ -16,11 +16,18 @@
  *  should get you to the section of about quaternions.
  */
 
+DISABLE_RANDOMNESS = false
+
 // register the directive with your app module
 var app = angular.module('SimEditor', ['ngTouch','ngAnimate', 'ui.bootstrap', 'pascalprecht.translate', 'ngCookies']);
 
 // function referenced by the drop target
 app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$translate', function ($scope, $uibModal, $log, $http, $translate) {
+
+    function getRandomAngle() {
+        if (DISABLE_RANDOMNESS) return 0
+        return Math.random() * 3.14 * 2.0
+    }
 
     $scope.competitionId = competitionId;
     $scope.mapId = mapId;
@@ -76,7 +83,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.01,
                     z: 0.238,
                     rot: 1.5708,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "harmed",
                     score: 15,
                 }
@@ -86,7 +93,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.548,
                     z: 0.193396,
                     rot: 1.05,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "P",
                     score: 30,
                 }
@@ -104,7 +111,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.33,
                     z: 0.3,
                     rot: 0,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "unharmed",
                     score: 15,
                 },
@@ -112,7 +119,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.4991,
                     z: 0.27366,
                     rot: 2.0944,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "harmed",
                     score: 15,
                 }
@@ -122,7 +129,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.14,
                     z: 0.299,
                     rot: 0,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "C",
                     score: 30,
                 },
@@ -130,7 +137,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     x: 0.564142,
                     z: 0.474142,
                     rot: 0.785398,
-                    frontRotation: Math.random() * 3.14,
+                    frontRotation: getRandomAngle(),
                     type: "P",
                     score: 30,
                 }
@@ -1199,6 +1206,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function getRandomArbitrary(min, max) {
+        if (DISABLE_RANDOMNESS) return (min + max) / 2
         return Math.random() * (max - min) + min;
     }
 
@@ -2244,7 +2252,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: vicPosTrans[0] + xOffset,
                         z: vicPosTrans[1] + zOffset,
                         rot: area4Humans[i].rot + area4Rot * -1.57,
-                        frontRotation: Math.random() * 3.14,
+                        frontRotation: getRandomAngle(),
                         id: humanId,
                         type: area4Humans[i].type,
                         score: area4Humans[i].score,
@@ -2259,7 +2267,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         x: hazPosTrans[0] + xOffset,
                         z: hazPosTrans[1] + zOffset,
                         rot: area4Hazards[i].rot + area4Rot * -1.57,
-                        frontRotation: Math.random() * 3.14,
+                        frontRotation: getRandomAngle(),
                         id: hazardId,
                         type: area4Hazards[i].type,
                         score: area4Hazards[i].score,
@@ -2630,7 +2638,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
             let vicWidth = 0.016;
             let angle = 0;
-            let frontAngle = Math.random() * 3.14;
+            let frontAngle = getRandomAngle();
             let nextPoint = 0;
             let prevPoint = 0;
 
@@ -2686,6 +2694,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             let rand = 0;
             if ($scope.room4VicTypes.length != vicContours.size()) {
                 rand = parseInt(Math.random() * scoringElem.length);
+                if (DISABLE_RANDOMNESS) 
+                    rand = parseInt(0.5 * scoringElem.length);
                 $scope.room4VicTypes.push(rand);
             } else {
                 rand = $scope.room4VicTypes[x];
