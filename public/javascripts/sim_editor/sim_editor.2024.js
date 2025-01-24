@@ -183,6 +183,18 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         return (typeof thing === "undefined");
     }
 
+    function get_cell(x, y, z) {
+        return $scope.cells[x +','+y+','+z]
+    }
+
+    function set_cell(x, y, z, val) {
+        $scope.cells[x +','+y+','+z] = val;
+    }
+
+    function init_cell(x, y, z) {
+        $scope.cells[x +','+y+','+z] = {};
+    }
+
     // tag recalculate
     $scope.recalculateLinear = function () {
         console.log("update");
@@ -213,22 +225,23 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         // Set to virtual wall around the black tile and start tile
         let startTilePosition = $scope.startTile.x + "," + $scope.startTile.y + "," + $scope.startTile.z;
         for (var index in $scope.cells) {
-            if($scope.cells[index].tile){
-                if($scope.cells[index].tile.black || index == startTilePosition){
+            if ($scope.cells[index].tile) {
+                if ($scope.cells[index].tile.black || index == startTilePosition) {
                     var x = Number(index.split(',')[0]);
                     var y = Number(index.split(',')[1]);
                     var z = Number(index.split(',')[2]);
-                    if($scope.cells[x + "," + (y-1) + "," + z]) $scope.cells[x + "," + (y-1) + "," + z].virtualWall = true;
-                    else $scope.cells[x + "," + (y-1) + "," + z] = {virtualWall: true};
+                    // if($scope.cells[x + "," + (y-1) + "," + z]) $scope.cells[x + "," + (y-1) + "," + z].virtualWall = true;
+                    // else $scope.cells[x + "," + (y-1) + "," + z] = {virtualWall: true};
 
-                    if($scope.cells[(x+1) + "," + y + "," + z]) $scope.cells[(x+1) + "," + y + "," + z].virtualWall = true;
-                    else $scope.cells[(x+1) + "," + y + "," + z] = {virtualWall: true};
+                    if (!get_cell(x,   y-1, z)) init_cell(x,   y-1, z)
+                    if (!get_cell(x+1, y,   z)) init_cell(x+1, y,   z)
+                    if (!get_cell(x-1, y,   z)) init_cell(x-1, y,   z)
+                    if (!get_cell(x,   y+1, z)) init_cell(x,   y+1, z)
 
-                    if($scope.cells[(x-1) + "," + y + "," + z]) $scope.cells[(x-1) + "," + y + "," + z].virtualWall = true;
-                    else $scope.cells[(x-1) + "," + y + "," + z] = {virtualWall: true};
-
-                    if($scope.cells[x + "," + (y+1) + "," + z]) $scope.cells[x + "," + (y+1) + "," + z].virtualWall = true;
-                    else $scope.cells[x + "," + (y+1) + "," + z] = {virtualWall: true};
+                    get_cell(x,   y-1, z).virtualWall = true;
+                    get_cell(x+1, y,   z).virtualWall = true;
+                    get_cell(x-1, y,   z).virtualWall = true;
+                    get_cell(x,   y+1, z).virtualWall = true;
 
                 }
             }
@@ -236,10 +249,10 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
         // Start it will all 4 walls around the starting tile
 
-        recurs($scope.startTile.x - 1, $scope.startTile.y, $scope.startTile.z);
-        recurs($scope.startTile.x + 1, $scope.startTile.y, $scope.startTile.z);
-        recurs($scope.startTile.x, $scope.startTile.y - 1, $scope.startTile.z);
-        recurs($scope.startTile.x, $scope.startTile.y + 1, $scope.startTile.z);
+        recurs($scope.startTile.x - 1, $scope.startTile.y    , $scope.startTile.z);
+        recurs($scope.startTile.x + 1, $scope.startTile.y    , $scope.startTile.z);
+        recurs($scope.startTile.x,     $scope.startTile.y - 1, $scope.startTile.z);
+        recurs($scope.startTile.x,     $scope.startTile.y + 1, $scope.startTile.z);
 
         //Top Left
         recurs($scope.startTile.x-1, $scope.startTile.y - 2, $scope.startTile.z);
@@ -280,13 +293,13 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function getHalfWall(x, y, z) {
-        if (!$scope.cells[x+','+y+','+z]) return 0;
-        return $scope.cells[x+','+y+','+z].halfWall;
+        if (!get_cell(x, y, z)) return 0;
+        return get_cell(x, y, z).halfWall;
     }
 
     function getWall(x, y, z) {
-        if (!$scope.cells[x+','+y+','+z]) return 0;
-        return $scope.cells[x+','+y+','+z].isWall;
+        if (!get_cell(x, y, z)) return 0;
+        return get_cell(x, y, z).isWall;
     }
 
     function blocked(x, y, z, halfWallSide) {
@@ -295,14 +308,13 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
     function reachable(x,y,z,i=-1,dir=-1){
         if(x<0 || x>$scope.width*2 || y<0 || y>$scope.length*2) return;
-        let cell = $scope.cells[x+','+y+','+z];
-        if(cell){
+        let cell = get_cell(x, y, z);
+        if (cell) {
             if (!cell.tile.halfTile) i = -1; // if going from quarter tile to full tile
             if (i == -1 && !cell.tile.halfTile) { // if going from full tile to full tile
-                if($scope.cells[x+','+y+','+z].reachable) return;
-                $scope.cells[x+','+y+','+z].reachable = true;
-            }
-            else {
+                if (cell.reachable) return;
+                cell.reachable = true;
+            } else {
                 const qr = quarterReachable[i+','+x+','+y+','+z];
                 if ((cell.tile.curve[i] == 0 && qr != undefined) ||
                     (cell.tile.curve[i] != 0 && qr != undefined && qr.find((i) => {return i == dir}) != undefined)) return;
@@ -311,20 +323,22 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     quarterReachable[i+','+x+','+y+','+z] = [dir];
                 else
                     quarterReachable[i+','+x+','+y+','+z].push(dir);
-                $scope.cells[x+','+y+','+z].reachable = true;
+                cell.reachable = true;
             }
-        }else{
-            $scope.cells[x+','+y+','+z] = {
-                isTile: true,
-                tile: {
-                    changeFloorTo: z,
-                    halfWallIn: [0,0,0,0],
-                    curve: [0,0,0,0]
-                },
-                reachable: true
-            };
+        } else {
+            set_cell(x, y, z,
+                {
+                    isTile: true,
+                    tile: {
+                        changeFloorTo: z,
+                        halfWallIn: [0,0,0,0],
+                        curve: [0,0,0,0]
+                    },
+                    reachable: true
+                }
+            )
         }
-        cell = $scope.cells[x+','+y+','+z];
+        cell = get_cell(x, y, z)
 
         //console.log(`${x},${y},${z}`)
         //console.log(cell)
@@ -458,20 +472,20 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             return;
         }
 
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
 
         // If this is a wall that doesn't exists
         if (!cell)
             return;
         // Outside of the current maze size.
-        if (x > $scope.width * 2 + 1 || x < 0 ||
+        if (x > $scope.width  * 2 + 1 || x < 0 ||
             y > $scope.length * 2 + 1 || y < 0 ||
-            z > $scope.height || z < 0)
+            z > $scope.height         || z < 0)
             return;
 
         // Already visited this, returning
-        if (cell.isLinear)
-            return;
+        if (cell.isLinear) return;
+
         if (cell.isWall || cell.virtualWall) {
             cell.isLinear = true;
 
@@ -594,7 +608,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function checkCurve(x, y, z, from){
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
 
         // If this is a wall that doesn't exists
         if (!cell) return;
@@ -634,7 +648,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             return;
         }
         
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
 
         // If this is a wall that doesn't exists
         if (!cell) return;
@@ -650,7 +664,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function halfTileFromCenter(x, y, z, exclude=-1){
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
 
         // If this is a wall that doesn't exists
         if (!cell) return;
@@ -685,7 +699,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function curveFromHalfWall(x, y, z, start){
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
         // If this is a wall that doesn't exists
         if (!cell) return;
 
@@ -734,7 +748,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     }
 
     function curveFromCenter(x, y, z, exclude=-1){
-        let cell = $scope.cells[x + ',' + y + ',' + z];
+        let cell = get_cell(x, y, z)
         // If this is a wall that doesn't exists
         if (!cell) return;
         if((cell.tile.curve[0] == 1 || cell.tile.curve[0] == 3) && exclude != 0){
@@ -785,17 +799,17 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
 
         // Check that this is an actual tile, not a wall
-        var cell = $scope.cells[x + ',' + y + ',' + z];
+        var cell = get_cell(x, y, z)
         if (cell) {
             cell.isLinear = true;
         } else {
-            $scope.cells[x + ',' + y + ',' + z] = {
+            set_cell(x, y, z, {
                 isTile: true,
                 isLinear: true,
                 tile: {
                     changeFloorTo: z
                 }
-            };
+            })
         }
     }
 
@@ -817,11 +831,12 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     var small = Range('α', 'ω');
 
     $scope.isVictim = function(type,x,y,z){
-        if($scope.cells[x + ',' + y + ',' + z] && $scope.cells[x + ',' + y + ',' + z].tile){
-            if($scope.cells[x + ',' + y + ',' + z].tile.victims.bottom == type) return true;
-            if($scope.cells[x + ',' + y + ',' + z].tile.victims.top == type) return true;
-            if($scope.cells[x + ',' + y + ',' + z].tile.victims.right == type) return true;
-            if($scope.cells[x + ',' + y + ',' + z].tile.victims.left == type) return true;
+        let cell = get_cell(x, y, z)
+        if(cell && cell.tile) {
+            if(cell.tile.victims.bottom == type) return true;
+            if(cell.tile.victims.top    == type) return true;
+            if(cell.tile.victims.right  == type) return true;
+            if(cell.tile.victims.left   == type) return true;
         }
         return false;
     };
@@ -1996,51 +2011,117 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     let t3e = [false, false, externals[2], externals[3]];
                     let t4e = [false, externals[1], externals[2], false];
 
-                    tile = protoHalfTilePart({name: tileName, x: x, z: z, fl: walls[z][x][0] && !walls[z][x][3], tw: walls[z][x][1][0], rw: walls[z][x][1][1], bw: walls[z][x][1][2], lw: walls[z][x][1][3], t1w: t1w, t2w: t2w, t3w: t3w, t4w: t4w, t1e: t1e, t2e: t2e, t3e: t3e, t4e: t4e, curve: walls[z][x][12], start: walls[z][x][4], trap: walls[z][x][3], checkpoint: walls[z][x][2], swamp: walls[z][x][5], width: width, height: height, id: tileId, xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2], color: walls[z][x][14], room: walls[z][x][16]});
+                    tile = protoHalfTilePart({
+                        name: tileName,
+                        x: x, z: z,
+                        fl: walls[z][x][0] && !walls[z][x][3],
+                        tw: walls[z][x][1][0], rw: walls[z][x][1][1], bw: walls[z][x][1][2], lw: walls[z][x][1][3],
+                        t1w: t1w, t2w: t2w, t3w: t3w, t4w: t4w,
+                        t1e: t1e, t2e: t2e, t3e: t3e, t4e: t4e,
+                        curve: walls[z][x][12],
+                        start: walls[z][x][4],
+                        trap: walls[z][x][3],
+                        checkpoint: walls[z][x][2],
+                        swamp: walls[z][x][5],
+                        width: width,
+                        height: height,
+                        id: tileId,
+                        xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2],
+                        color: walls[z][x][14],
+                        room: walls[z][x][16]
+                    });
                     tile = tile.replace(/true/g, "TRUE")
                     tile = tile.replace(/false/g, "FALSE")
                 }
                 else {
-                    tile = protoTilePart({name: tileName, x: x, z: z, fl: walls[z][x][0] && !walls[z][x][3], tw: walls[z][x][1][0], rw: walls[z][x][1][1], bw: walls[z][x][1][2], lw: walls[z][x][1][3], tex: externals[0], rex: externals[1], bex: externals[2], lex: externals[3], start: walls[z][x][4], trap: walls[z][x][3], checkpoint: walls[z][x][2], swamp: walls[z][x][5], width: width, height: height, id: tileId, xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2], color: walls[z][x][14], room: walls[z][x][16]});
+                    tile = protoTilePart({
+                        name: tileName,
+                        x: x, z: z,
+                        fl: walls[z][x][W_REACHABLE] && !walls[z][x][W_BLACK],
+
+                        tw: walls[z][x][W_ARWALL][0], 
+                        rw: walls[z][x][W_ARWALL][1],
+                        bw: walls[z][x][W_ARWALL][2],
+                        lw: walls[z][x][W_ARWALL][3],
+
+                        tex: externals[0],
+                        rex: externals[1],
+                        bex: externals[2],
+                        lex: externals[3],
+
+                        start: walls[z][x][W_START],
+                        trap: walls[z][x][W_BLACK],
+                        checkpoint: walls[z][x][W_CHECKPOINT],
+                        swamp: walls[z][x][W_SWAMP],
+                        width: width,
+                        height: height,
+                        id: tileId,
+                        xScale: tileScale[0], yScale: tileScale[1], zScale: tileScale[2],
+                        color: walls[z][x][W_FLOOR_COLOR],
+                        room: walls[z][x][W_ROOMNUM]
+                    });
+
                     tile = tile.replace(/true/g, "TRUE")
                     tile = tile.replace(/false/g, "FALSE")
                 }
                 allTiles = allTiles + tile
+
+
+                let xmin = (x * 0.3 * tileScale[0] + startX) - (0.15 * tileScale[0])
+                let zmin = (z * 0.3 * tileScale[2] + startZ) - (0.15 * tileScale[2])
+                let xmax = (x * 0.3 * tileScale[0] + startX) + (0.15 * tileScale[0])
+                let zmax = (z * 0.3 * tileScale[2] + startZ) + (0.15 * tileScale[2])
+
                 //checkpoint
-                if(walls[z][x][2]){
-                    //Add bounds to the checkpoint boundaries
-                    allCheckpointBounds += boundsPart({name: "checkpoint", id: checkId, xmin: (x * 0.3 * tileScale[0] + startX) - (0.15 * tileScale[0]), zmin: (z * 0.3 * tileScale[2] + startZ) - (0.15 * tileScale[2]), xmax: (x * 0.3 * tileScale[0] + startX) + (0.15 * tileScale[0]), zmax: (z * 0.3 * tileScale[2] + startZ) + (0.15 * tileScale[2]), y: floorPos});
-                    //Increment id counter
-                    checkId = checkId + 1
+                if (walls[z][x][W_CHECKPOINT]) {
+                    allCheckpointBounds += boundsPart({
+                        name: "checkpoint",
+                        id: checkId,
+                        xmin, zmin, xmax, zmax,
+                        y: floorPos
+                    });
+                    checkId += 1
                 }
                 //trap
-                if(walls[z][x][3]){
+                if (walls[z][x][W_BLACK]) {
                     //Add bounds to the trap boundaries
-                    allTrapBounds += boundsPart({name: "trap", id: trapId, xmin: (x * 0.3 * tileScale[0] + startX) - (0.15 * tileScale[0]), zmin: (z * 0.3 * tileScale[2] + startZ) - (0.15 * tileScale[2]), xmax: (x * 0.3 * tileScale[0] + startX) + (0.15 * tileScale[0]), zmax: (z * 0.3 * tileScale[2] + startZ) + (0.15 * tileScale[2]), y: floorPos});
-                    //Increment id counter
-                    trapId = trapId + 1
+                    allTrapBounds += boundsPart({
+                        name: "trap",
+                        id: trapId,
+                        xmin, zmin, xmax, zmax,
+                        y: floorPos
+                    });
+                    trapId += 1
                 }
                 //goal
-                if(walls[z][x][4]){
-                    //Add bounds to the goal boundaries
-                    allGoalBounds += boundsPart({name: "start", id: goalId, xmin: (x * 0.3 * tileScale[0] + startX) - (0.15 * tileScale[0]), zmin: (z * 0.3 * tileScale[2] + startZ) - (0.15 * tileScale[2]), xmax: (x * 0.3 * tileScale[0] + startX) + (0.15 * tileScale[0]), zmax: (z * 0.3 * tileScale[2] + startZ) + (0.15 * tileScale[2]), y: floorPos});
-                    //Increment id counter
-                    goalId = goalId + 1
+                if (walls[z][x][W_START]) {
+                    allGoalBounds += boundsPart({
+                        name: "start",
+                        id: goalId,
+                        xmin, zmin, xmax, zmax,
+                        y: floorPos
+                    });
+                    goalId += 1
                 }
-                //swamp
-                if(walls[z][x][5]){
-                    //Add bounds to the goal boundaries
-                    allSwampBounds += boundsPart({name: "swamp", id: swampId, xmin: (x * 0.3 * tileScale[0] + startX) - (0.15 * tileScale[0]), zmin: (z * 0.3 * tileScale[2] + startZ) - (0.15 * tileScale[2]), xmax: (x * 0.3 * tileScale[0] + startX) + (0.15 * tileScale[0]), zmax: (z * 0.3 * tileScale[2] + startZ) + (0.15 * tileScale[2]), y: floorPos});
-                    //Increment id counter
-                    swampId = swampId + 1
+                if (walls[z][x][W_SWAMP]) {
+                    allSwampBounds += boundsPart({
+                        name: "swamp",
+                        id: swampId,
+                        xmin, zmin, xmax, zmax,
+                        y: floorPos
+                    });
+                    swampId +=1
                 }
                 //Increment id counter
-                tileId = tileId + 1
+                tileId += 1
 
                 //Human
                 if(walls[z][x][W_HUMAN_TYPE] != 0){
                     //Position of tile
-                    let humanPos = [(x * 0.3 * tileScale[0]) + startX , (z * 0.3 * tileScale[2]) + startZ]
+                    let humanPos = [
+                        (x * 0.3 * tileScale[0]) + startX ,
+                        (z * 0.3 * tileScale[2]) + startZ
+                    ]
                     let humanRot = humanRotation[walls[z][x][W_HUMAN_PLACE]]
                     //Randomly move human left and right on wall
                     let randomOffset = [0, 0]
@@ -2076,7 +2157,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                         humanPos[0] = humanPos[0] + humanOffset[walls[z][x][W_HUMAN_PLACE]][0] + randomOffset[0]
                         humanPos[1] = humanPos[1] + humanOffset[walls[z][x][W_HUMAN_PLACE]][1] + randomOffset[1]
                         let score = 15
-                        if(walls[z][x][8]) score = 5
+                        if(walls[z][x][W_LINEAR]) score = 5
                         allHumans = allHumans + visualHumanPart({
                             x: humanPos[0],
                             z: humanPos[1],
@@ -2099,7 +2180,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                             let score = 30
                             if(walls[z][x][8]) score = 10
                             //Curved Wall Humans
-                            let curveWallArr = JSON.parse(walls[z][x][12]);
+                            let curveWallArr = JSON.parse(walls[z][x][W_CURVE_WALL]);
                             if (curveWallArr[parseInt(i / 4)]) {
                                 let curveDir = curveWallArr[parseInt(i / 4)] - 1;
                                 let inside = 0;
@@ -2302,14 +2383,14 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         }
 
         //Add the data pieces to the file data
-        fileData = fileData + groupPart({data: allTiles, name: "WALLTILES"})
+        fileData = fileData + groupPart({data: allTiles,            name: "WALLTILES"})
         fileData = fileData + groupPart({data: allCheckpointBounds, name: "CHECKPOINTBOUNDS"})
-        fileData = fileData + groupPart({data: allTrapBounds, name: "TRAPBOUNDS"})
-        fileData = fileData + groupPart({data: allGoalBounds, name: "STARTBOUNDS"})
-        fileData = fileData + groupPart({data: allSwampBounds, name: "SWAMPBOUNDS"})
-        fileData = fileData + groupPart({data: allObstacles, name: "OBSTACLES"})
-        fileData = fileData + groupPart({data: allHumans, name: "HUMANGROUP"})
-        fileData = fileData + groupPart({data: allHazards, name: "HAZARDGROUP"})
+        fileData = fileData + groupPart({data: allTrapBounds,       name: "TRAPBOUNDS"})
+        fileData = fileData + groupPart({data: allGoalBounds,       name: "STARTBOUNDS"})
+        fileData = fileData + groupPart({data: allSwampBounds,      name: "SWAMPBOUNDS"})
+        fileData = fileData + groupPart({data: allObstacles,        name: "OBSTACLES"})
+        fileData = fileData + groupPart({data: allHumans,           name: "HUMANGROUP"})
+        fileData = fileData + groupPart({data: allHazards,          name: "HAZARDGROUP"})
         fileData = fileData + supervisorPart({time: $scope.time})
         return fileData
 
@@ -2340,20 +2421,20 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 // if the file was read correctly 
                 reader.onload = function () {
                     var data = JSON.parse(reader.result);
-                    $scope.cells = data.cells;
+                    $scope.cells         = data.cells;
                     $scope.competitionId = competitionId;
 
-                    $scope.startTile = data.startTile;
+                    $scope.startTile         = data.startTile;
                     $scope.numberOfDropTiles = data.numberOfDropTiles;
-                    $scope.height = data.height;
-                    $scope.width = data.width;
-                    $scope.length = data.length;
-                    $scope.name = data.name;
-                    $scope.time = data.time;
-                    $scope.finished = data.finished;
+                    $scope.height            = data.height;
+                    $scope.width             = data.width;
+                    $scope.length            = data.length;
+                    $scope.name              = data.name;
+                    $scope.time              = data.time;
+                    $scope.finished          = data.finished;
 
-                    $scope.roomTiles = data.roomTiles;
-                    $scope.area4Room = data.area4Room;
+                    $scope.roomTiles       = data.roomTiles;
+                    $scope.area4Room       = data.area4Room;
                     $scope.room4CanvasSave = data.room4CanvasSave;
                     $scope.room4Img.src = $scope.room4CanvasSave;
                     if (data.room4VicTypes != undefined)
