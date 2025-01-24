@@ -1307,51 +1307,57 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     /**
      * @typedef {Object} Tile
      * @property {boolean} is_reachable
-     * @property {Array  } whole_walls
      * @property {boolean} is_checkpoint
      * @property {boolean} is_black
      * @property {boolean} is_start
      * @property {boolean} is_swamp
+     * @property {boolean} is_obstacle
+     * @property {boolean} is_linear
+     *
+     * @property {Array  } whole_walls
      * @property {Number } wall_token_type
      * @property {Number } wall_token_place
-     * @property {boolean} is_linear
-     * @property {boolean} is_obstacle
-     * @property {string } outer_half_walls
+     * @property {Number } wall_token_front_rot
+     *
      * @property {string } inner_half_walls
+     * @property {string } outer_half_walls
+     * @property {Number } outer_half_walls_info
      * @property {string } curved_walls
      * @property {Array  } half_wall_tokens
-     * @property {string } floor_color
-     * @property {Number } outer_half_walls_info
-     * @property {Number } room_number
-     * @property {Number } wall_token_front_rot
      * @property {Number } half_wall_tokens_front_rot
+     *
+     * @property {string } floor_color
+     * @property {Number } room_number
      */
 
-    function createWorld(){
+    function createWorld() {
         let walls = [];
-        for(let x=1,l=$scope.length*2+1;x<l;x+=2){
+        for (let x=1, l=$scope.length*2+1; x<l; x+=2){
             let row = [];
-            for(let z=1,m=$scope.width*2+1;z<m;z+=2){
+            for (let z=1, m=$scope.width*2+1; z<m; z+=2){
                 row.push({
-                    is_reachable         : false,
-                    whole_walls            : [0, 0, 0, 0],
-                    is_checkpoint        : false,
-                    is_black             : false,
-                    is_start             : false,
-                    is_swamp             : false,
-                    wall_token_type        : 0,
-                    wall_token_place       : 0,
-                    is_linear            : false,
-                    is_obstacle          : false,
-                    outer_half_walls     : '',
-                    inner_half_walls      : '',
-                    curved_walls        : '',
-                    half_wall_tokens     : [],
-                    floor_color       : '',
-                    outer_half_walls_info: 0,
-                    room_number           : 0,
-                    wall_token_front_rot   : 0,
-                    half_wall_tokens_front_rot : 0
+                    is_reachable               : false,
+                    is_checkpoint              : false,
+                    is_black                   : false,
+                    is_start                   : false,
+                    is_swamp                   : false,
+                    is_obstacle                : false,
+                    is_linear                  : false,
+
+                    whole_walls                : [0, 0, 0, 0],
+                    wall_token_type            : 0,
+                    wall_token_place           : 0,
+                    wall_token_front_rot       : 0,
+
+                    inner_half_walls           : '',
+                    outer_half_walls           : '',
+                    outer_half_walls_info      : 0,
+                    curved_walls               : '',
+                    half_wall_tokens           : [],
+                    half_wall_tokens_front_rot : 0,
+
+                    floor_color                : '',
+                    room_number                : 0,
                 });
             }
             walls.push(row);
