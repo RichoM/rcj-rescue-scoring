@@ -1,6 +1,7 @@
 /* Tags:
  *      recalculate
  *      proto file creation
+ *      enum tile
  *      quaternions
  *      rotation wall tokens
  *      json read
@@ -16,7 +17,7 @@
  *  should get you to the section of about quaternions.
  */
 
-DISABLE_RANDOMNESS = false
+DISABLE_RANDOMNESS = true
 
 // register the directive with your app module
 var app = angular.module('SimEditor', ['ngTouch','ngAnimate', 'ui.bootstrap', 'pascalprecht.translate', 'ngCookies']);
@@ -1221,7 +1222,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     const HUMAN_PLACE_BOTTOM = 2;
     const HUMAN_PLACE_LEFT   = 3;
 
-
+    //tag enum tile
     const W_REACHABLE     = 0;
     const W_ARWALL        = 1;
     const W_CHECKPOINT    = 2;
@@ -1475,7 +1476,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
 
                 let humanPlace = HUMAN_PLACE_TOP;
 
-
                 let roomNum = 1;
                 let floorColor = '0.635 0.635 0.635';
                 let halfWallOutVar = [0, 0, 0, 0];
@@ -1527,7 +1527,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 }
                 if (thisCell.tile) {
                     halfWallOutVar = arWallHalf;
-                    halfWallInVar = thisCell.tile.halfWallIn;
+                    // using array.slice[] to make copy of the array, so no state is accidentally kept on the ui between world generations
+                    halfWallInVar = thisCell.tile.halfWallIn.slice() 
                     curveWallVar = '[' + thisCell.tile.curve.toString() + ']';
                 }
                 roomNum = checkRoomNumber(x,y,0)
@@ -1961,11 +1962,33 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 if(walls[z][x][4]) tileName = "START_TILE"
                 //Create a new tile with all the data
                 if ($scope.cells[String(x * 2 + 1) + "," + String(z * 2 + 1) + ",0"].tile.halfTile) {
+                    let t1w = [
+                        walls[z][x][10][0] == 1 ? walls[z][x][15][0] : 0,
+                        walls[z][x][11][0],
+                        walls[z][x][11][3],
+                        walls[z][x][10][3] == 2 ? walls[z][x][15][3] : 0];
 
-                    let t1w = [walls[z][x][10][0] == 1 ? walls[z][x][15][0] : 0, walls[z][x][11][0], walls[z][x][11][3], walls[z][x][10][3] == 2 ? walls[z][x][15][3] : 0];
-                    let t2w = [walls[z][x][10][0] == 2 ? walls[z][x][15][0] : 0, walls[z][x][10][1] == 2 ? walls[z][x][15][1] : 0, walls[z][x][11][1], 0]; 
-                    let t3w = [0, walls[z][x][11][2], walls[z][x][10][2] == 1 ? walls[z][x][15][2] : 0, walls[z][x][10][3] == 1 ? walls[z][x][15][3] : 0];
-                    let t4w = [0, walls[z][x][10][1] == 1 ? walls[z][x][15][1] : 0, walls[z][x][10][2] == 2 ? walls[z][x][15][2] : 0, 0];
+                    let t2w = [
+                        walls[z][x][10][0] == 2 ? walls[z][x][15][0] : 0,
+                        walls[z][x][10][1] == 2 ? walls[z][x][15][1] : 0,
+                        walls[z][x][11][1],
+                        0
+                    ]; 
+
+                    let t3w = [
+                        0,
+                        walls[z][x][11][2],
+                        walls[z][x][10][2] == 1 ? walls[z][x][15][2] : 0,
+                        walls[z][x][10][3] == 1 ? walls[z][x][15][3] : 0
+                    ];
+
+                    let t4w = [
+                        0,
+                        walls[z][x][10][1] == 1 ? walls[z][x][15][1] : 0,
+                        walls[z][x][10][2] == 2 ? walls[z][x][15][2] : 0,
+                        0
+                    ];
+
                     console.log("b", walls[z][x][10]);
                     
                     let t1e = [externals[0], false, false, externals[3]];
