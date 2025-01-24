@@ -1010,18 +1010,18 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
             createArea4Victims(0, 0);
         }
         var map = {
-            name: $scope.name,
-            length: $scope.length,
-            height: $scope.height,
-            width: $scope.width,
-            finished: $scope.finished,
-            startTile: $scope.startTile,
-            cells: $scope.cells,
-            roomTiles: $scope.roomTiles,
-            time: $scope.time,
-            area4Room: $scope.area4Room,
+            name           : $scope.name,
+            length         : $scope.length,
+            height         : $scope.height,
+            width          : $scope.width,
+            finished       : $scope.finished,
+            startTile      : $scope.startTile,
+            cells          : $scope.cells,
+            roomTiles      : $scope.roomTiles,
+            time           : $scope.time,
+            area4Room      : $scope.area4Room,
             room4CanvasSave: $scope.room4CanvasSave,
-            room4VicTypes: $scope.room4VicTypes,
+            room4VicTypes  : $scope.room4VicTypes,
         };
          var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(map))
          var downloadLink = document.createElement('a')
@@ -1103,10 +1103,10 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         //Surrounding tiles
         let around = [[0, -1], [1, 0], [0, 1], [-1, 0]];
         //Tiles to check if notches are needed
-        let notchAround = [[ [1, -1], [-1, -1] ],
-                            [ [1, 1], [1, -1] ],
-                            [ [-1, 1], [1, 1] ],
-                            [ [-1, -1], [-1, 1] ]];
+        let notchAround = [[[ 1, -1], [-1, -1]],
+                           [[ 1,  1], [ 1, -1]],
+                           [[-1,  1], [ 1,  1]],
+                           [[-1, -1], [-1,  1]]];
 
         //Current direction
         let d = 0;
@@ -1167,7 +1167,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         return [needLeft, needRight, rotation]
     }
 
-    function u2f(v){
+    function is_truthy(v){
         if(v) return true;
         return false;
     }
@@ -1308,10 +1308,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
     * @returns {AxisAngle}
     */
     function calculateWallTokenRot(y_rot, front_rot) {
-        console.log("front_rot: ", front_rot)
         let z_rot_quat = axis_angle_to_quaternion({x: 0, y: 0, z: 1, angle: front_rot})
         let y_rot_quat = axis_angle_to_quaternion({x: 0, y: 1, z: 0, angle: y_rot    }) 
-
         /**
         * Multiplying two quaternions is equivalent to applying their rotations one after the
         * other in a procedural way, just that the second factor is applied first. So we basically do:
@@ -1323,12 +1321,7 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         *                               .                        .
         */
         let final_rot_quat = multiply_quaternions(y_rot_quat, z_rot_quat)
-
         let final_rot = quaternion_to_axis_angle(final_rot_quat)
-        console.log("z_rot_quat", z_rot_quat);
-        console.log("y_rot_quat", y_rot_quat);
-        console.log("final_rot_quat", final_rot_quat);
-        console.log("final_rot", final_rot)
         return final_rot;
     }
 
@@ -1364,52 +1357,52 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         for(let y=1,l=$scope.length*2+1;y<l;y+=2){
             for(let x=1,m=$scope.width*2+1;x<m;x+=2){
 
-                let thisCell = $scope.cells[x+','+y+',0'];
+                let thisCell = get_cell(x, y, 0);
                 let arWall     = [0, 0, 0, 0];
                 let arWallHalf = [0, 0, 0, 0];
 
-                if($scope.cells[(x)+','+(y-2)+',0'] == null
-                && $scope.cells[(x)+','+(y-1)+',0']
-                && $scope.cells[(x)+','+(y-1)+',0'].isWall
+                if (get_cell(x, y-2, 0) == null
+                &&  get_cell(x, y-1, 0)
+                &&  get_cell(x, y-1, 0).isWall
                 ) arWall[0] = 1;
 
-                if($scope.cells[(x+1)+','+(y)+',0'] 
-                && $scope.cells[(x+1)+','+(y)+',0'].isWall
+                if (get_cell(x+1, y, 0) 
+                &&  get_cell(x+1, y, 0).isWall
                 ) arWall[1] = 1;
 
-                if($scope.cells[(x)+','+(y+1)+',0'] 
-                && $scope.cells[(x)+','+(y+1)+',0'].isWall
+                if (get_cell(x, y+1, 0) 
+                &&  get_cell(x, y+1, 0).isWall
                 ) arWall[2] = 1;
 
-                if($scope.cells[(x-2)+','+(y)+',0'] == null 
-                && $scope.cells[(x-1)+','+(y)+',0'] 
-                && $scope.cells[(x-1)+','+(y)+',0'].isWall
+                if (get_cell(x-2, y, 0) == null 
+                &&  get_cell(x-1, y, 0) 
+                &&  get_cell(x-1, y, 0).isWall
                 ) arWall[3] = 1;
 
-                if($scope.cells[(x)+','+(y-1)+',0'] 
+                if (get_cell(x, y-1, 0) 
                 && y == 1 
-                && $scope.cells[(x)+','+(y-1)+',0'].halfWall > 0) {
-                    $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
-                    arWallHalf[0] = $scope.cells[(x)+','+(y-1)+',0'].halfWall;
+                && get_cell(x, y-1, 0).halfWall > 0) {
+                    get_cell(x, y, 0).tile.halfTile = 1;
+                    arWallHalf[0] = get_cell(x, y-1, 0).halfWall;
                 }
 
-                if($scope.cells[(x+1)+','+(y)+',0']
-                && $scope.cells[(x+1)+','+(y)+',0'].halfWall > 0) {
-                    $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
-                    arWallHalf[1] = $scope.cells[(x+1)+','+(y)+',0'].halfWall;
+                if (get_cell(x+1, y, 0)
+                &&  get_cell(x+1, y, 0).halfWall > 0) {
+                    get_cell(x, y, 0).tile.halfTile = 1;
+                    arWallHalf[1] = get_cell(x+1, y, 0).halfWall;
                 }
 
-                if($scope.cells[(x)+','+(y+1)+',0'] 
-                && $scope.cells[(x)+','+(y+1)+',0'].halfWall > 0) {
-                    $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
-                    arWallHalf[2] = $scope.cells[(x)+','+(y+1)+',0'].halfWall;
+                if(get_cell(x, y+1, 0) 
+                && get_cell(x, y+1, 0).halfWall > 0) {
+                    get_cell(x, y, 0).tile.halfTile = 1;
+                    arWallHalf[2] = get_cell(x, y+1, 0).halfWall;
                 }
 
-                if($scope.cells[(x-1)+','+(y)+',0'] 
+                if(get_cell(x-1, y, 0) 
                 && x == 1 
-                && $scope.cells[(x-1)+','+(y)+',0'].halfWall > 0) {
-                    $scope.cells[(x)+','+(y)+',0'].tile.halfTile = 1;
-                    arWallHalf[3] = $scope.cells[(x-1)+','+(y)+',0'].halfWall;
+                && get_cell(x-1, y, 0).halfWall > 0) {
+                    get_cell(x, y, 0).tile.halfTile = 1;
+                    arWallHalf[3] = get_cell(x-1, y, 0).halfWall;
                 }
 
                 const HUMAN_NONE = 0;
@@ -1500,17 +1493,17 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                 roomNum = checkRoomNumber(x,y,0)
 
 
-                if(thisCell.tile){
-                    walls[(y-1)/2][(x-1)/2][W_REACHABLE    ] = u2f(thisCell.reachable);
+                if(thisCell.tile) {
+                    walls[(y-1)/2][(x-1)/2][W_REACHABLE    ] = is_truthy(thisCell.reachable);
                     walls[(y-1)/2][(x-1)/2][W_ARWALL       ] = arWall;
-                    walls[(y-1)/2][(x-1)/2][W_CHECKPOINT   ] = u2f(thisCell.tile.checkpoint);
-                    walls[(y-1)/2][(x-1)/2][W_BLACK        ] = u2f(thisCell.tile.black);
+                    walls[(y-1)/2][(x-1)/2][W_CHECKPOINT   ] = is_truthy(thisCell.tile.checkpoint);
+                    walls[(y-1)/2][(x-1)/2][W_BLACK        ] = is_truthy(thisCell.tile.black);
                     walls[(y-1)/2][(x-1)/2][W_START        ] = (x == $scope.startTile.x && y == $scope.startTile.y);
-                    walls[(y-1)/2][(x-1)/2][W_SWAMP        ] = u2f(thisCell.tile.swamp);
+                    walls[(y-1)/2][(x-1)/2][W_SWAMP        ] = is_truthy(thisCell.tile.swamp);
                     walls[(y-1)/2][(x-1)/2][W_HUMAN_TYPE   ] = humanType;
                     walls[(y-1)/2][(x-1)/2][W_HUMAN_PLACE  ] = humanPlace;
-                    walls[(y-1)/2][(x-1)/2][W_LINEAR       ] = u2f(thisCell.isLinear);
-                    walls[(y-1)/2][(x-1)/2][W_OBSTACLE     ] = u2f(thisCell.tile.obstacle);
+                    walls[(y-1)/2][(x-1)/2][W_LINEAR       ] = is_truthy(thisCell.isLinear);
+                    walls[(y-1)/2][(x-1)/2][W_OBSTACLE     ] = is_truthy(thisCell.tile.obstacle);
                     walls[(y-1)/2][(x-1)/2][W_HALF_WALL_OUT] = halfWallOutVar;
                     walls[(y-1)/2][(x-1)/2][W_HALF_WALL_IN ] = halfWallInVar;
                     walls[(y-1)/2][(x-1)/2][W_CURVE_WALL   ] = curveWallVar;
@@ -1771,37 +1764,54 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         //Y rotation of humans for each wall
         let humanRotation = [3.14, 1.57, 0, -1.57]
         let humanRotationCurve = [2.355, 0.785, -0.785, -2.355];
+
         let halfWallVicPos = [[-0.075, -0.136], [-0.014, -0.075], [-0.075, -0.014], [-0.136, -0.075], 
-                            [0.075, -0.136], [0.136, -0.075], [0.075, -0.014], [0.014, -0.074], 
-                            [-0.075, 0.014], [-0.014, 0.075], [-0.075, 0.136], [-0.136, 0.075],
-                            [0.075, 0.014], [0.136, 0.075], [0.075, 0.136], [0.014, 0.075]];
+                              [ 0.075, -0.136], [ 0.136, -0.075], [ 0.075, -0.014], [ 0.014, -0.074], 
+                              [-0.075,  0.014], [-0.014,  0.075], [-0.075,  0.136], [-0.136,  0.075],
+                              [ 0.075,  0.014], [ 0.136,  0.075], [ 0.075,  0.136], [ 0.014,  0.075]];
+
         let curveWallVicPos = [[-0.022, -0.039], [-0.022, -0.022], [-0.039, -0.023], [-0.038, -0.038],
-                            [0.038, -0.039], [0.038, -0.022], [0.021, -0.023], [0.022, -0.038],
-                            [-0.022, 0.021], [-0.022, 0.038], [-0.039, 0.037], [-0.038, 0.022],
-                            [0.038, 0.021], [0.038, 0.038], [0.021, 0.037], [0.022, 0.022]];
+                               [ 0.038, -0.039], [ 0.038, -0.022], [ 0.021, -0.023], [ 0.022, -0.038],
+                               [-0.022,  0.021], [-0.022,  0.038], [-0.039,  0.037], [-0.038,  0.022],
+                               [ 0.038,  0.021], [ 0.038,  0.038], [ 0.021,  0.037], [ 0.022,  0.022]];
         //Offsets for visual and thermal humans
-        let humanOffset = [[0, -0.1375 * tileScale[2]], [0.1375 * tileScale[0], 0], [0, 0.1375 * tileScale[2]], [-0.1375 * tileScale[0], 0]]
-        let humanOffsetThermal = [[0, -0.136 * tileScale[2]], [0.136 * tileScale[0], 0], [0, 0.136 * tileScale[2]], [-0.136 * tileScale[0], 0]]
-        let humanOffsetCurve = [[-0.008, 0.008], [-0.008, -0.008], [0.008, -0.008], [0.008, 0.008]];
+        let humanOffset = [
+            [0,                      -0.1375 * tileScale[2]],
+            [ 0.1375 * tileScale[0],  0                    ],
+            [0,                       0.1375 * tileScale[2]],
+            [-0.1375 * tileScale[0],  0                    ]
+        ]
+        let hazardOffset = [
+            [ 0,                     -0.136 * tileScale[2]],
+            [ 0.136 * tileScale[0],   0                   ],
+            [ 0,                      0.136 * tileScale[2]],
+            [-0.136 * tileScale[0],   0                   ]
+        ]
+        let humanOffsetCurve = [
+            [-0.008,  0.008],
+            [-0.008, -0.008],
+            [ 0.008, -0.008],
+            [ 0.008,  0.008]
+        ]
         //Names of types of visual human
         let humanTypesVisual = ["harmed", "unharmed", "stable"]
         //Names of types of hazards
         let hazardTypes = ["F", "P", "C", "O"]
 
         //Id numbers used to give a unique but interable name to tile pieces
-        let tileId = 0
-        let checkId = 0
-        let trapId = 0
-        let goalId = 0
-        let swampId = 0
-        let humanId = 0
-        let obstacleId = 0;
-        let hazardId = 0;
+        let tileId     = 0
+        let checkId    = 0
+        let trapId     = 0
+        let goalId     = 0
+        let swampId    = 0
+        let humanId    = 0
+        let obstacleId = 0
+        let hazardId   = 0
 
         //Resolve corners
         // halfwallout 10, hallwallin 11, halfwalloutinfo 15
         for(let x = 0; x < $scope.length+1; x++) {
-            for(let z = 0; z<$scope.width+1; z++) {
+            for(let z = 0; z < $scope.width+1; z++) {
 
                 let verticalWalls = 0;
                 let horizontalWalls = 0;
@@ -2090,8 +2100,8 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
                     }
 
                     if (walls[z][x][W_HUMAN_TYPE] >= 5 && walls[z][x][W_HUMAN_TYPE] <= 8){ //hazards
-                        humanPos[0] = humanPos[0] + humanOffsetThermal[walls[z][x][7]][0] + randomOffset[0]
-                        humanPos[1] = humanPos[1] + humanOffsetThermal[walls[z][x][7]][1] + randomOffset[1]
+                        humanPos[0] = humanPos[0] + hazardOffset[walls[z][x][7]][0] + randomOffset[0]
+                        humanPos[1] = humanPos[1] + hazardOffset[walls[z][x][7]][1] + randomOffset[1]
                         let score = 30
                         if(walls[z][x][8]) score = 10
                         allHazards = allHazards + hazardPart({
