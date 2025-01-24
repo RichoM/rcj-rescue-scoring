@@ -925,10 +925,15 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         delete link;
     }
 
-    $scope.tileColour = function(x,y,z,rotate=0){
-        let cell = $scope.cells[x+','+y+','+z];
-        if(!cell) return {};
-        if(cell.isWall) return cell.isLinear?{'background-color': 'black'}:{'background-color': 'navy'};
+    $scope.tileColour = function(x, y, z, rotate=0){
+        let cell = get_cell(x, y, z)
+        if (!cell) return {};
+        if (cell.isWall) {
+            if (cell.isLinear)
+                return {'background-color': 'black'};
+            else
+                return {'background-color': 'navy'};
+        }
 
         if(cell.halfWall > 0){
             let direction = 180*(cell.halfWall-1)+(y%2==1?0:90);
@@ -1051,60 +1056,6 @@ app.controller('SimEditorController', ['$scope', '$uibModal', '$log', '$http','$
         link.href = URL.createObjectURL(blob);
         link.download = $scope.name+'.wbt';
         link.click();
-    }
-
-    function checkSRCorner(walls, xPos, yPos, wallDir){
-        let sr = null;
-        if(xPos > -1 && xPos < $scope.width && yPos > -1 && yPos < $scope.length){
-            sr = walls[yPos][xPos];
-            return sr[1][wallDir] && sr[1][(wallDir+1)%4];
-        }
-        return false;
-    }
-
-    function checkForCorners(pos, walls){
-        //Surrounding tile directions
-        let around = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-        //Needed corners
-        let corners = [false, false, false, false];
-
-        let surroundingTiles = [];
-
-        let thisWall = walls[pos[1]][pos[0]];
-
-        if(!thisWall[0]) {
-            corners[0] = thisWall[1][0] || thisWall[1][1] || checkSRCorner(walls, pos[0] + 1, pos[1] - 1, 2);
-            corners[1] = thisWall[1][1] || thisWall[1][2] || checkSRCorner(walls, pos[0] + 1, pos[1] + 1, 3);
-            corners[2] = thisWall[1][2] || thisWall[1][3] || checkSRCorner(walls, pos[0] - 1, pos[1] + 1, 0);
-            corners[3] = thisWall[1][3] || thisWall[1][0] || checkSRCorner(walls, pos[0] - 1, pos[1] - 1, 1);
-            return corners;
-        }
-
-        //For each surrounding card
-        for(let a of around){
-            //Get the position
-            let xPos = pos[0] + a[0]
-            let yPos = pos[1] + a[1]
-            //If it is a valid position
-            if(xPos > -1 && xPos < $scope.width && yPos > -1 && yPos < $scope.length){
-                //Add the tile to the surrounding list
-                surroundingTiles.push(walls[yPos][xPos]);
-            }else{
-                //Otherwise add a null value
-                surroundingTiles.push([false, [false, false, false, false], false, false, false]);
-            }
-        }
-
-        //If top right is needed
-        corners[0] = surroundingTiles[0][1][1] && surroundingTiles[1][1][0] && !thisWall[1][0] && !thisWall[1][1];
-        //If bottom right is needed
-        corners[1] = surroundingTiles[1][1][2] && surroundingTiles[2][1][1] && !thisWall[1][1] && !thisWall[1][2];
-        //If bottom left is needed
-        corners[2] = surroundingTiles[2][1][3] && surroundingTiles[3][1][2] && !thisWall[1][2] && !thisWall[1][3];
-        //If top left is needed
-        corners[3] = surroundingTiles[0][1][3] && surroundingTiles[3][1][0] && !thisWall[1][3] && !thisWall[1][0];
-
-        return corners;
     }
 
     function checkForExternalWalls(pos, walls){
