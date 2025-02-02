@@ -13,7 +13,6 @@ append scripts
   script(src="/javascripts/lvl-uuid.js")
   script(src="/javascripts/sim_editor/sim_editor.2024.js")
   script(src="/components/bootstrap-fileinput/js/fileinput.min.js")
-  script(src="/components/bootstrap-fileinput/themes/fa/theme.min.js")
   script(src="/components/bootstrap-fileinput/js/locales/ja.js")
   script(src="/components/html2canvas/index.js")
   script(src="/javascripts/opencv.js")
@@ -22,13 +21,8 @@ append css
   link(href="/stylesheets/maze_edit.css" rel="stylesheet")
   link(href="/components/bootstrap-fileinput/css/fileinput.min.css" rel="stylesheet")
 
-block location
-    a.breadcrumb-item(ng-click="go('/home')") Home
-    a.breadcrumb-item(ng-click="go('/service')") Public services
-    span.breadcrumb-item.active Simulation world editor
-
 block content
-    h1 {{"admin.simMapEditor.title" | translate}} 2024
+    h1 {{"admin.simMapEditor.title" | translate}} 2025
     p {{"admin.simMapEditor.desc" | translate}}
     div(style='margin-top:50px;')
         .row

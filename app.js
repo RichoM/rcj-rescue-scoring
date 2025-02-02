@@ -8,28 +8,15 @@ env('process.env')
 
 var express = require('express');
 var RateLimit = require('express-rate-limit');
-const { createBullBoard } = require('@bull-board/api')
-const { BullAdapter } = require('@bull-board/api/bullAdapter')
-const { ExpressAdapter } = require('@bull-board/express')
 const compression = require('compression')
 var path = require('path')
 var favicon = require('serve-favicon')
 var logger = require('./config/logger').mainLogger
 var cookieParser = require('cookie-parser')
 var bodyParser = require('body-parser')
-const mongo_express = require('mongo-express/lib/middleware')
-const mongo_express_config = require('./mongo_express_config')
 
-// db
-var db = require('./config/db')
-var mongoose = require('mongoose')
-
-// auth
-var pass = require('./config/pass')
-var passport = require('passport')
 // session
 var session = require('express-session')
-var MongoStore = require('connect-mongo')
 
 var bodyParser = require('body-parser');
 
@@ -38,79 +25,20 @@ const limiter = new RateLimit({
     max: process.env.LIMITER_MAX || 200
 });
 
-const bullAdapter = new ExpressAdapter();
-
-const {mailQueue} = require("./queue/mailQueue")
-const {backupQueue} = require("./queue/backupQueue")
-
-const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
-    queues: [
-        new BullAdapter(mailQueue),
-        new BullAdapter(backupQueue)
-    ],
-    serverAdapter:bullAdapter
-})
-
 var app = express();
 app.set('trust proxy', true);
 async function bootstrap(){
-    //========================================================================
-    //                          Routes require
-    //========================================================================
-
     //========================================================================
     //                          Static routes
     //========================================================================
 
     var homeRoute = require('./routes/home')
-    var lineRoute = require('./routes/line')
-    var mazeRoute = require('./routes/maze')
-    var simulationRoute = require('./routes/simulation')
-    var loginRoute = require('./routes/login')
-    var adminRoute = require('./routes/admin')
     var localesRoute = require('./routes/locales')
-    var signageRoute = require('./routes/signage')
-    var shortRoute = require('./routes/shortURL')
-    var serviceRoute = require('./routes/service')
-    var documentRoute = require('./routes/document')
-    var registrationRoute = require('./routes/registration')
-    var myPageRoute = require('./routes/mypage')
-
-
-
-    //========================================================================
-    //                          Api routes
-    //========================================================================
-
-    var apiAuthRoute = require('./routes/api/auth')
-    var apiLineMapsRoute = require('./routes/api/lineMaps')
-    var apiMazeMapsRoute = require('./routes/api/mazeMaps')
-    var apiTeamsRoute = require('./routes/api/teams')
-    var apiRoundsRoute = require('./routes/api/rounds')
-    var apiFieldsRoute = require('./routes/api/fields')
-    var apiLineRunsRoute = require('./routes/api/lineRuns')
-    var apiMazeRunsRoute = require('./routes/api/mazeRuns')
-    var apiSimulationRunsRoute = require('./routes/api/simRuns')
-    var apiCompetitionsRoute = require('./routes/api/competitions')
-    var apiUserRoute = require('./routes/api/users')
-    var apiSignageRoute = require('./routes/api/signage')
-    var apiBackupRoute = require('./routes/api/backup')
-    var apiShortURL = require('./routes/api/shortURL')
-    var apiDocumentRoute = require('./routes/api/document')
-    var apiMailRoute = require('./routes/api/mail')
-    var apiRegistrationRoute = require('./routes/api/registration')
-    var apiReservationRoute = require('./routes/api/reservation')
-    var apiCabinetRoute = require('./routes/api/cabinet')
-    var apiSurveyRoute = require('./routes/api/survey')
-    var apiRankingRoute = require('./routes/api/ranking')
-    var apiTechnicalChallengeRoute = require('./routes/api/technicalChallenge')
 
 
     //========================================================================
     //                          Configuration
     //========================================================================
-
-    
 
     app.use(compression())
 
@@ -125,14 +53,6 @@ async function bootstrap(){
 
     app.use(bodyParser.json({limit: '50mb'}));
     app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
-
-
-    /*
-    * Log
-    */
-    //app.use(morgan('short'));
-
-
 
 
     /*
@@ -152,14 +72,14 @@ async function bootstrap(){
     * Session and passport for auth
     */
     // init passport and session
-    app.use(session({
-        secret: 'keyboard cat',
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: true }
-      }))
-    app.use(passport.initialize())
-    app.use(passport.session())
+    // app.use(session({
+    //     secret: 'keyboard cat',
+    //     resave: false,
+    //     saveUninitialized: true,
+    //     cookie: { secure: true }
+    //   }))
+    // app.use(passport.initialize())
+    // app.use(passport.session())
 
     // apply rate limiter to all requests
     app.use(limiter);
@@ -169,62 +89,9 @@ async function bootstrap(){
     //                          Route configuration
     //========================================================================
 
-    //========================================================================
-    //                          API Calls
-    //========================================================================
 
-    app.use('/api/auth', apiAuthRoute)
-    app.use('/api/maps/line', [apiLineMapsRoute.public, pass.ensureLoginApi, apiLineMapsRoute.private, pass.ensureAdminApi, apiLineMapsRoute.admin])
-    app.use('/api/maps/maze', [apiMazeMapsRoute.public, pass.ensureLoginApi, apiMazeMapsRoute.private, pass.ensureAdminApi, apiMazeMapsRoute.admin])
-    app.use('/api/teams', [apiTeamsRoute.public, pass.ensureLoginApi, apiTeamsRoute.private, pass.ensureAdminApi, apiTeamsRoute.admin])
-    app.use('/api/rounds', [apiRoundsRoute.public, pass.ensureLoginApi, apiRoundsRoute.private, pass.ensureAdminApi, apiRoundsRoute.admin])
-    app.use('/api/fields', [apiFieldsRoute.public, pass.ensureLoginApi, apiFieldsRoute.private, pass.ensureAdminApi, apiFieldsRoute.admin])
-    app.use('/api/runs/line', [apiLineRunsRoute.public, pass.ensureLoginApi, apiLineRunsRoute.private, pass.ensureAdminApi, apiLineRunsRoute.admin])
-    app.use('/api/runs/maze', [apiMazeRunsRoute.public, pass.ensureLoginApi, apiMazeRunsRoute.private, pass.ensureAdminApi, apiMazeRunsRoute.admin])
-    app.use('/api/runs/simulation', [apiSimulationRunsRoute.public, pass.ensureLoginApi, apiSimulationRunsRoute.private, pass.ensureAdminApi, apiSimulationRunsRoute.admin])
-    app.use('/api/competitions', [apiCompetitionsRoute.public, pass.ensureLoginApi, apiCompetitionsRoute.private, pass.ensureAdminApi, apiCompetitionsRoute.admin])
-    app.use('/api/users', [pass.ensureLoginApi, apiUserRoute.admin, pass.ensureSuperApi , apiUserRoute.super])
-    app.use('/api/signage', [pass.ensureLoginApi, apiSignageRoute.private, pass.ensureAdminApi, apiSignageRoute.admin])
-    app.use('/api/backup', [pass.ensureAdminApi, apiBackupRoute.admin])
-    app.use('/api/short', [pass.ensureSuperApi , apiShortURL.super])
-    app.use('/api/document', [apiDocumentRoute.public, pass.ensureLoginApi, apiDocumentRoute.private, pass.ensureAdminApi, apiDocumentRoute.admin])
-    app.use('/api/mail', [apiMailRoute.public, pass.ensureLoginApi, apiMailRoute.private, pass.ensureAdminApi, apiMailRoute.admin])
-    app.use('/api/registration', [apiRegistrationRoute.public, pass.ensureLoginApi, apiRegistrationRoute.private, pass.ensureAdminApi, apiRegistrationRoute.admin])
-    app.use('/api/reservation', [apiReservationRoute.public, pass.ensureLoginApi, apiReservationRoute.private, pass.ensureAdminApi, apiReservationRoute.admin])
-    app.use('/api/cabinet', [apiCabinetRoute.public, pass.ensureLoginApi, apiCabinetRoute.private, pass.ensureAdminApi, apiCabinetRoute.admin])
-    app.use('/api/survey', [apiSurveyRoute.public, pass.ensureLoginApi, apiSurveyRoute.private, pass.ensureAdminApi, apiSurveyRoute.admin])
-    app.use('/api/ranking', [apiRankingRoute.public, pass.ensureLoginApi, apiRankingRoute.private, pass.ensureAdminApi, apiRankingRoute.admin])
-    app.use('/api/technicalChallenge', [pass.ensureLoginApi, apiTechnicalChallengeRoute.private, pass.ensureAdminApi, apiTechnicalChallengeRoute.admin])
-    app.get('/api/ip', (request, response) => response.send(request.ip))
-
-
-    //========================================================================
-    //                          Website static pages(ish)
-    //========================================================================
-
-    app.use('/login', pass.ensureNotAuthenticated, loginRoute)
-    app.use('/logout', pass.ensureAuthenticated, function (req, res, next) {
-        req.logout(req.user, err => {
-            if(err) return next(err);
-            res.redirect("/home");
-        });
-    })
-    app.use('/home', [homeRoute.public, pass.ensureAuthenticated, homeRoute.private, pass.ensureAdmin, homeRoute.admin])
+    app.use('/home', [homeRoute.public, homeRoute.private, homeRoute.admin])
     app.use('/locales', localesRoute)
-    app.use('/s', shortRoute.public)
-    app.use('/service', serviceRoute)
-
-    app.use('/line', [lineRoute.public, pass.ensureAuthenticated, lineRoute.private, pass.ensureAdmin, lineRoute.admin])
-    app.use('/maze', [mazeRoute.public, pass.ensureAuthenticated, mazeRoute.private, pass.ensureAdmin, mazeRoute.admin])
-    app.use('/simulation', [simulationRoute.public, pass.ensureAuthenticated, simulationRoute.private, pass.ensureAdmin, simulationRoute.admin])
-    app.use('/signage', [pass.ensureAuthenticated, signageRoute.private, pass.ensureAdmin, signageRoute.admin])
-    app.use('/admin', pass.ensureAdmin, adminRoute)
-    bullAdapter.setBasePath('/admin/queues')
-    app.use('/admin/queues', pass.ensureSuper, bullAdapter.getRouter())
-    // app.use('/admin/mongo', pass.ensureSuper, await mongo_express(mongo_express_config))
-    app.use('/document', [documentRoute.public, pass.ensureAuthenticated, documentRoute.private, pass.ensureAdmin, documentRoute.admin])
-    app.use('/registration', [registrationRoute.public, pass.ensureAuthenticated, registrationRoute.private, pass.ensureAdmin, registrationRoute.admin])
-    app.use('/mypage', [myPageRoute.public, pass.ensureAuthenticated, myPageRoute.private, pass.ensureAdmin, myPageRoute.admin])
 
     //========================================================================
     //                          Custom routes
