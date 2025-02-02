@@ -10,7 +10,7 @@ const { ACCESSLEVELS } = require('../models/user');
 
 /* GET home page. */
 publicRouter.get('/', function (req, res) {
-  res.render('home', { user: req.user });
+  res.render('sim_editor/sim_editor_2024');
 });
 
 publicRouter.get('/scanner/:mode', function (req, res, next) {
