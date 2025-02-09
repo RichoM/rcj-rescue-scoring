@@ -1,44 +1,33 @@
-// -*- tab-width: 2 -*-
-//========================================================================
-//                          Libraries
-//========================================================================
-
+// Libraries
+//
 var env = require('node-env-file')
 env('process.env')
 
-var express = require('express');
-var RateLimit = require('express-rate-limit');
+var express       = require('express');
+var RateLimit     = require('express-rate-limit');
 const compression = require('compression')
-var path = require('path')
-var favicon = require('serve-favicon')
-var logger = require('./config/logger').mainLogger
-var cookieParser = require('cookie-parser')
-var bodyParser = require('body-parser')
-
-// session
-var session = require('express-session')
-
-var bodyParser = require('body-parser');
+var path          = require('path')
+var favicon       = require('serve-favicon')
+var logger        = require('./config/logger').mainLogger
+var cookieParser  = require('cookie-parser')
+var bodyParser    = require('body-parser')
+var session       = require('express-session')
 
 const limiter = new RateLimit({
     windowMs: process.env.LIMITER_WINDOW_MS || 1000, // 1 sec
-    max: process.env.LIMITER_MAX || 200
+    max     : process.env.LIMITER_MAX || 200
 });
 
 var app = express();
 app.set('trust proxy', true);
 async function bootstrap(){
-    //========================================================================
-    //                          Static routes
-    //========================================================================
+    // Static routes
 
-    var homeRoute = require('./routes/home')
+    var homeRoute    = require('./routes/home')
     var localesRoute = require('./routes/locales')
 
 
-    //========================================================================
-    //                          Configuration
-    //========================================================================
+    // Configuration
 
     app.use(compression())
 
@@ -54,51 +43,23 @@ async function bootstrap(){
     app.use(bodyParser.json({limit: '50mb'}));
     app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-
-    /*
-    * Config
-    */
-    // uncomment after placing your favicon in /public
     app.use(favicon(path.join(__dirname, 'public/images', 'favicon.ico')))
-    //app.use(logger('dev'))
     app.use(bodyParser.json())
-    app.use(bodyParser.urlencoded({
-        extended: false
-    }))
+    app.use(bodyParser.urlencoded({ extended: false }))
     app.use(cookieParser())
     app.use(express.static(path.join(__dirname, 'public')))
-
-    /*
-    * Session and passport for auth
-    */
-    // init passport and session
-    // app.use(session({
-    //     secret: 'keyboard cat',
-    //     resave: false,
-    //     saveUninitialized: true,
-    //     cookie: { secure: true }
-    //   }))
-    // app.use(passport.initialize())
-    // app.use(passport.session())
 
     // apply rate limiter to all requests
     app.use(limiter);
 
 
-    //========================================================================
-    //                          Route configuration
-    //========================================================================
-
+    // Route configuration
 
     app.use('/home', [homeRoute.public, homeRoute.private, homeRoute.admin])
     app.use('/locales', localesRoute)
 
-    //========================================================================
-    //                          Custom routes
-    //========================================================================
-    /*
-    * This is called last in the routing config, therefor it'll take care of 404s
-    */
+    // Custom routes
+    // This is called last in the routing config, therefor it'll take care of 404s
     app.use(function (req, res, next) {
         logger.error("404 Not Found: " + req.originalUrl)
         var err = new Error('Not Found: ' + req.originalUrl)
@@ -106,10 +67,7 @@ async function bootstrap(){
         next(err)
     })
 
-    //========================================================================
-    //                          Error handling
-    //========================================================================
-
+    // Error handling
     process.on('uncaughtException', function(err) {
         console.log("SERVER ERROR");
         console.log(err);
@@ -133,31 +91,23 @@ async function bootstrap(){
         *
         */
         else {
-
             if (err.status != 404) {
                 logger.error(err)
             }
 
-
             // since we are running api and static website on same we need to hack the different custom routes
             var stringSplit = req.originalUrl.split("/")
-            //res.status(err.status || 500)
             if (stringSplit[1] !== undefined && stringSplit[1] === "api") {
-                res.status(404).send({
-                    message: "404 Not found"
-                })
+                res.status(404).send({ message: "404 Not found" })
             } else {
 
                 // in in development show stacktrace
                 if (app.get('env') === 'development') {
                     res.render('error', {
                         message: err.message,
-                        error: err
+                        error:   err
                     })
-                }
-
-                // in production :(
-                else {
+                } else { // in production :( 
                     res.status(err.status || 500)
                     res.render('error', {
                         message: err.message,
