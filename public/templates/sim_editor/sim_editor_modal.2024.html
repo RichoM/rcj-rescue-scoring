@@ -110,7 +110,7 @@
   <div style="text-align: center; margin-top: 20px">
   <div style="margin: auto;">
     {{"admin.simMapEditor.victimRotation" | translate}}
-    <input type="number" name="rotation-spinbox" ng-model="cell.tile.single_victim_rotation" min="0" max="359" value="0" step="1" style="display: inline-block;">
+    <input type="number" name="rotation-spinbox" ng-model="cell.tile.single_victim_rotation" value="0" step="1" style="display: inline-block;">
   </div>
   </div>
 
@@ -198,7 +198,7 @@
       </tr>
       <tr>
         <th style="width: var(--row-with)">{{"admin.simMapEditor.victimRotation" | translate}}</th>
-        <td ng-repeat="c in range(16)"> <input type="number" min="0" max="359" style="width: 100%; display: block;" ng-model="cell.tile.halfWallVicRots[c]" value="0"> </td>
+        <td ng-repeat="c in range(16)"> <input type="number" style="width: 100%; display: block;" ng-model="cell.tile.halfWallVicRots[c]" value="0"> </td>
       </tr>
     </table>
     <br>
